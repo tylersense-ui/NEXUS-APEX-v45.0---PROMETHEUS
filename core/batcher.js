@@ -34,6 +34,11 @@
  *   - Calculs exacts: hackChance/hackPercent/growPercent
  *   - Fallback gracieux si Formulas indisponible
  * 
+ * ✓ DYNAMIC RAM CALCULATION (FIX CRITIQUE)
+ *   - Utilise ns.getScriptRam() pour valeurs exactes
+ *   - Plus de valeurs hardcodées (1.70/1.75 GB)
+ *   - S'adapte automatiquement aux changements de BitBurner
+ * 
  * ✓ INSTRUMENTATION DEBUG_MODE
  *   - Métriques: hackPercent choisi, threads planifiés vs dispatchés
  *   - RAM waste tracking
@@ -93,6 +98,12 @@ export class Batcher {
         
         /** @type {number} Dernier recalcul EV/s par target */
         this._lastEVRecalc = {};
+        
+        /**
+         * Cache RAM des workers (évite appels répétés à getScriptRam)
+         * @private
+         */
+        this._workerRamCache = null;
     }
 
     /**
@@ -262,6 +273,63 @@ export class Batcher {
 
     /**
      * ═══════════════════════════════════════════════════════════════════════════════
+     * 💾 RÉCUPÉRATION DYNAMIQUE DE LA RAM DES WORKERS
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * Utilise ns.getScriptRam() pour obtenir les valeurs exactes (FIX CRITIQUE).
+     * Cache les résultats pour éviter les appels répétés.
+     * 
+     * @private
+     * @returns {Object} { hackRam, growRam, weakenRam, shareRam }
+     */
+    _getWorkerRamCosts() {
+        // Utiliser le cache si déjà calculé
+        if (this._workerRamCache) {
+            return this._workerRamCache;
+        }
+
+        // Calculer les RAM exactes via ns.getScriptRam()
+        try {
+            const hackRam = this.ns.getScriptRam('/hack/workers/hack.js');
+            const growRam = this.ns.getScriptRam('/hack/workers/grow.js');
+            const weakenRam = this.ns.getScriptRam('/hack/workers/weaken.js');
+            const shareRam = this.ns.getScriptRam('/hack/workers/share.js');
+
+            // Vérifier que les valeurs sont valides
+            if (hackRam <= 0 || growRam <= 0 || weakenRam <= 0) {
+                throw new Error("RAM invalide détectée pour les workers");
+            }
+
+            // Cacher les résultats
+            this._workerRamCache = {
+                hackRam: hackRam,
+                growRam: growRam,
+                weakenRam: weakenRam,
+                shareRam: shareRam
+            };
+
+            if (this._debugMode) {
+                this.log.debug(`💾 RAM workers: H=${hackRam.toFixed(2)}GB G=${growRam.toFixed(2)}GB W=${weakenRam.toFixed(2)}GB`);
+            }
+
+            return this._workerRamCache;
+
+        } catch (error) {
+            // Fallback sur valeurs approximatives si getScriptRam échoue
+            this.log.warn(`⚠️  Échec getScriptRam, fallback sur valeurs approximatives: ${error.message}`);
+            
+            this._workerRamCache = {
+                hackRam: 1.70,
+                growRam: 1.75,
+                weakenRam: 1.75,
+                shareRam: 4.00
+            };
+
+            return this._workerRamCache;
+        }
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
      * 🧮 CALCUL DES JOBS HWGW
      * ═══════════════════════════════════════════════════════════════════════════════
      * Calcule les 4 jobs (Hack, Weaken, Grow, Weaken) avec timing précis.
@@ -269,11 +337,16 @@ export class Batcher {
      * @private
      * @param {string} target - Hostname
      * @param {number} hackPercent - Pourcentage optimal à hack
-     * @returns {Array<Object>} Liste des jobs [{type, target, threads, delay}]
+     * @returns {Array<Object>} Liste des jobs [{type, target, threads, delay, ramPerThread}]
      */
     _calculateBatchJobs(target, hackPercent) {
         const server = this.ns.getServer(target);
         const player = this.ns.getPlayer();
+        
+        // ═══════════════════════════════════════════════════════════════════════════
+        // RAM DYNAMIQUE DES WORKERS (FIX CRITIQUE)
+        // ═══════════════════════════════════════════════════════════════════════════
+        const { hackRam, growRam, weakenRam } = this._getWorkerRamCosts();
         
         // ═══════════════════════════════════════════════════════════════════════════
         // TIMING (avec Formulas si disponible)
@@ -324,7 +397,7 @@ export class Batcher {
         const weaken2Delay = buffer * 2; // Finit 200ms après weaken1
         
         // ═══════════════════════════════════════════════════════════════════════════
-        // CONSTRUCTION DES JOBS
+        // CONSTRUCTION DES JOBS (avec RAM DYNAMIQUE)
         // ═══════════════════════════════════════════════════════════════════════════
         
         const jobs = [
@@ -333,28 +406,28 @@ export class Batcher {
                 target: target,
                 threads: hackThreads,
                 delay: Math.max(0, hackDelay),
-                ramPerThread: 1.70
+                ramPerThread: hackRam  // ✅ DYNAMIQUE
             },
             {
                 type: 'weaken',
                 target: target,
                 threads: weakenThreads1,
                 delay: Math.max(0, weaken1Delay),
-                ramPerThread: 1.75
+                ramPerThread: weakenRam  // ✅ DYNAMIQUE
             },
             {
                 type: 'grow',
                 target: target,
                 threads: growThreads,
                 delay: Math.max(0, growDelay),
-                ramPerThread: 1.75
+                ramPerThread: growRam  // ✅ DYNAMIQUE
             },
             {
                 type: 'weaken',
                 target: target,
                 threads: weakenThreads2,
                 delay: Math.max(0, weaken2Delay),
-                ramPerThread: 1.75
+                ramPerThread: weakenRam  // ✅ DYNAMIQUE
             }
         ];
         
@@ -573,11 +646,28 @@ export async function main(ns) {
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 
  * LE BATCHER EST LE CŒUR DU SYSTÈME PROMETHEUS.
- * Il implémente les 3 optimisations majeures :
+ * Il implémente les 4 optimisations majeures :
  * 
  * 1. EV/s DYNAMIC HACKPERCENT
  * 2. FFD PACKING ALGORITHM
  * 3. FORMULAS.EXE INTEGRATION
+ * 4. DYNAMIC RAM CALCULATION (FIX CRITIQUE v45.0)
+ * 
+ * === FIX CRITIQUE v45.0 - DYNAMIC RAM ===
+ * 
+ * PROBLÈME AVANT :
+ * Les valeurs RAM étaient hardcodées (1.70 GB, 1.75 GB, 4.00 GB).
+ * Si BitBurner change les coûts RAM des scripts, le batcher plante.
+ * 
+ * SOLUTION MAINTENANT :
+ * Utilisation de ns.getScriptRam() pour obtenir les valeurs exactes.
+ * Cache intelligent pour éviter les appels répétés.
+ * Fallback gracieux sur valeurs approximatives si getScriptRam échoue.
+ * 
+ * IMPACT :
+ * - Robustesse maximale face aux changements de BitBurner
+ * - Adaptation automatique aux mods/versions différentes
+ * - Précision parfaite des calculs de packing
  * 
  * Voir fichier séparé BATCHER_DOCS.md pour documentation exhaustive.
  */

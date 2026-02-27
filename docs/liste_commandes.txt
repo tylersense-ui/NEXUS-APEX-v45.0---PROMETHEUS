@@ -1,0 +1,60 @@
+Liste des commandes — Nexus-Automation
+
+1) Démarrage (Haute priorité)
+- `run boot.js` — Lancer l'ensemble du système (uploader les fichiers puis démarre le Kernel).
+- `run /core/orchestrator.js` — Lancer l'orchestrateur (si nécessaire manuellement).
+- `run /core/batcher.js` — Lancer le batcher (usage manuel si on veut bypasser l'orchestrateur).
+
+2) Arrêt / sécurité
+- `run global-kill.js` — Arrêt d'urgence : vide les ports et `ns.killall()` sur tout le réseau.
+
+3) Core / Control
+- `run /hack/controller.js` — Dispatcher central (généralement lancé par l'orchestrateur).
+- `run ui/dashboard.js` — Ouvrir le tableau de bord UI (le `boot.js` le lance aussi).
+
+4) Managers (souvent lancés automatiquement par l'orchestrateur)
+- `run /managers/server-manager.js` — Gestion des serveurs achetés.
+- `run /managers/hacknet-manager.js` — Gestion des Hacknet Nodes.
+- `run /managers/gang-manager.js` — Gestion du gang (requires gang API).
+- `run /managers/corp-manager.js` — Gestion de la corporation (requires Singularity API).
+- `run /managers/program-manager.js` — Achat automatique des .exe (Tor / exes).
+- `run /managers/stock-master.js` — Gestion automatique du marché (TIX/4S).
+
+5) Outils (exécution manuelle courante)
+- `run /tools/importer.js` — Génère `data/todo.json` depuis la liste canonique.
+- `run /tools/pre-flight.js` — Moniteur de progression des augmentations.
+- `run /tools/scanner.js` — Scanner/radar réseau (trie par rentabilité).
+- `run /tools/check-rep.js [Reputation]` — Simulateur d'achat par réputation.
+  Exemple: `run tools/check-rep.js 100k` (ou `100000`).
+- `run /tools/set-share.js [0-100]` — Régle le ratio de partage pour le batcher.
+  Exemple: `run tools/set-share.js 50` (pour 50%).
+- `run /tools/shop.js [Nom de l'augmentation]` — Marquer une augmentation comme achetée.
+  Exemple: `run tools/shop.js "NeuroFlux Governor"`.
+- `run /tools/liquidate.js` — Vente d'urgence du portefeuille boursier.
+
+6) Workers (générés par le `Controller`; généralement pas lancés manuellement, mais exemples d'appel):
+- `hack/workers/hack.js` — args: `<target> <delay_ms> <salt>`
+  Exemple direct: `run hack/workers/hack.js 1 n00dles 1000 0` (1 thread, cible `n00dles`, délai 1000ms).
+- `hack/workers/grow.js` — args: `<target> <delay_ms> <salt>`
+  Exemple: `run hack/workers/grow.js 1 n00dles 2000 0`.
+- `hack/workers/weaken.js` — args: `<target> <delay_ms> <salt>`
+  Exemple: `run hack/workers/weaken.js 1 n00dles 3000 0`.
+- `hack/workers/share.js` — partagée; habituellement exécutée par le système.
+
+Note: la syntaxe BitBurner pour lancer un script est `run <script> <threads> [args...]`.
+Exemples avec threads: `run hack/workers/hack.js 5 n00dles 1000 0` (5 threads).
+
+7) Diagnostics & debug (terminal BitBurner)
+- `ps()` — lister processus sur l'hôte courant.
+- `tail core/batcher.js` — voir les logs du batcher.
+- `tail core/orchestrator.js` — voir les logs de l'orchestrateur.
+- `tail core/dashboard.js` — voir le dashboard en file de log.
+
+Remarques générales
+- Les chemins peuvent apparaître avec ou sans slash initial (`run boot.js` vs `run /boot.js`); les deux formes sont rencontrées dans le dépôt.
+- Les modules `Manager` et `Core` sont conçus pour être lancés par `boot.js`/`orchestrator` — lancer manuellement est possible pour debug.
+- Les `hack/workers/*.js` sont destinés à être déployés et exécutés par le `Controller` via `ns.exec`; les exécuter manuellement peut être utile pour tests isolés.
+
+Souhaitez-vous que je :
+- convertisse ceci en README plus lisible, ou
+- ajoute pour chaque script une ligne indiquant s'il accepte des arguments (oui/non) et lesquels ?
