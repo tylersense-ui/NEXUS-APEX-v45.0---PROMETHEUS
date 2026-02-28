@@ -68,7 +68,7 @@ export async function main(ns) {
             { remote: "tools/set-share.js", local: "tools/set-share.js" },
             { remote: "tools/shop.js", local: "tools/shop.js" },
             { remote: "tools/liquidate.js", local: "tools/liquidate.js" },
-            { remote: "nexus-greedy-swarm-v2.js", local: "nexus-greedy-swarm-v2.js"},
+            { remote: "tools/nexus-greedy-swarm-v2.js", local: "tools/nexus-greedy-swarm-v2.js"},
         ]
     };
 
