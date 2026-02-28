@@ -51,13 +51,13 @@ export async function main(ns) {
             { remote: "hack/workers/share.js", local: "hack/workers/share.js" }
         ],
         managers: [
-            { remote: "managers/singularity.js", local: "managers/singularity.js" },
+            { remote: "managers/singularity-manager.js", local: "managers/singularity-manager.js" },
             { remote: "managers/server-manager.js", local: "managers/server-manager.js" },
             { remote: "managers/gang-manager.js", local: "managers/gang-manager.js" },
             { remote: "managers/corp-manager.js", local: "managers/corp-manager.js" },
             { remote: "managers/hacknet-manager.js", local: "managers/hacknet-manager.js" },
             { remote: "managers/program-manager.js", local: "managers/program-manager.js" },
-            { remote: "managers/stock-master.js", local: "managers/stock-master.js" },
+            { remote: "managers/stock-manager.js", local: "managers/stock-manager.js" },
             { remote: "managers/sleeve-manager.js", local: "managers/sleeve-manager.js" }
         ],
         tools: [
