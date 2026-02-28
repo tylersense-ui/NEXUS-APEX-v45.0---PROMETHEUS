@@ -1,0 +1,157 @@
+/**
+ * ██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗
+ * ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔════╝██║   ██║██╔════╝
+ * ██████╔╝██████╔╝██║   ██║██╔████╔██║█████╗     ██║   ███████║█████╗  ██║   ██║███████╗
+ * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
+ * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
+ * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
+ *                           v45.0 - "Stealing Fire From The Gods"
+ * 
+ * @module      Liste_Cannonique_augmentations_bitburner.txt
+ * @description Liste complète de toutes les augmentations du jeu Bitburner 2.8.1
+ * @author      Claude (Anthropic) + tylersense-ui
+ * @version     45.0 - PROMETHEUS
+ * @date        2025-01-XX
+ * @license     MIT
+ * @requires    BitBurner v2.8.1+ (Steam).
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 
+ * @usage
+ *   - utiliser par ns.run("/tools/importer.js").
+ * 
+ * @dependencies
+ *   - aucune.
+ */
+Légende : Nom_Augmentation|Prix|Réputation|Faction1, Faction2, ...|Prérequis|Effect1, Effect2, ... .
+
+ADR-V1 Pheromone Gene|$17,500m|3,750k|Four Sigma, MegaCorp, NWO, The Syndicate, Tian Di Hui|Aucun|+10% reputation from factions and companies.
+ADR-V2 Pheromone Gene|$550,000m|62,500k|Bachman & Associates, Clarke Incorporated, Four Sigma, Silhouette|ADR-V1 Pheromone Gene|+20% reputation from factions and companies.
+Artificial Bio-neural Network Implant|$3,000b|275,000k|BitRunners, Fulcrum Secret Technologies|Aucun|+12% hacking skill, +3% faster hack(), grow(), and weaken(), +15% hack() power.
+Artificial Synaptic Potentiation|$80,000m|6,250k|NiteSec, The Black Hand|Aucun|+5% hacking exp, +2% faster hack(), grow(), and weaken(), +5% hack() success chance.
+Augmented Targeting I|$15,000m|5,000k|Blade Industries, Ishima, KuaiGong International, OmniTek Incorporated, Sector-12, Slum Snakes, The Dark Army, The Syndicate|Aucun|+10% dexterity skill.
+Augmented Targeting II|$42,500m|8,750k|Blade Industries, KuaiGong International, OmniTek Incorporated, Sector-12, The Dark Army, The Syndicate|Augmented Targeting I|+20% dexterity skill.
+Augmented Targeting III|$115,000m|27,500k|Blade Industries, KuaiGong International, OmniTek Incorporated, The Covenant, The Dark Army, The Syndicate|Augmented Targeting II|+30% dexterity skill.
+Bionic Arms|$275,000m|62,500k|Tetrads|Aucun|+30% strength skill, +30% dexterity skill.
+Bionic Legs|$375,000m|150,000k|Blade Industries, KuaiGong International, OmniTek Incorporated, Speakers for the Dead, The Syndicate|Aucun|+60% agility skill.
+Bionic Spine|$125,000m|45,000k|Blade Industries, KuaiGong International, OmniTek Incorporated, Speakers for the Dead, The Syndicate|Aucun|+15% combat skills.
+BitRunners Neurolink|$4,375b|875,000k|BitRunners|Aucun|+15% hacking skill, +20% hacking exp, +5% faster hack(), grow(), and weaken(), +10% hack() success chance, Start with FTPCrack.exe and relaySMTP.exe after installing Augmentations.
+BitWire|$10,000m|3,750k|CyberSec, NiteSec|Aucun|+5% hacking skill.
+BrachiBlades|$90,000m|12,500k|The Syndicate|Aucun|+15% strength skill, +15% defense skill, +15% crime money, +10% crime success rate.
+CashRoot Starter Kit|$125,000m|12,500k|Sector-12|Aucun|Start with $1m after installing Augmentations, Start with BruteSSH.exe after installing Augmentations.
+Combat Rib I|$23,750m|7,500k|Blade Industries, Ishima, KuaiGong International, OmniTek Incorporated, Slum Snakes, The Dark Army, The Syndicate, Volhaven|Aucun|+10% strength skill, +10% defense skill.
+Combat Rib II|$65,000m|18,750k|Blade Industries, KuaiGong International, OmniTek Incorporated, The Dark Army, The Syndicate, Volhaven|Combat Rib I|+14% strength skill, +14% defense skill.
+Combat Rib III|$120,000m|35,000k|Blade Industries, KuaiGong International, OmniTek Incorporated, The Covenant, The Dark Army, The Syndicate|Combat Rib II|+18% strength skill, +18% defense skill.
+CordiARC Fusion Reactor|$5,000b|1,125k|MegaCorp|Aucun|+35% combat skills, +35% combat exp.
+Cranial Signal Processors - Gen I|$70,000m|10,000k|CyberSec, NiteSec|Aucun|+5% hacking skill, +1% faster hack(), grow(), and weaken().
+Cranial Signal Processors - Gen II|$125,000m|18,750k|CyberSec, NiteSec|Cranial Signal Processors - Gen I|+7% hacking skill, +2% faster hack(), grow(), and weaken(), +5% hack() success chance.
+Cranial Signal Processors - Gen III|$550,000m|50,000k|BitRunners, NiteSec, The Black Hand|Cranial Signal Processors - Gen II|+9% hacking skill, +2% faster hack(), grow(), and weaken(), +15% hack() power.
+Cranial Signal Processors - Gen IV|$1,100b|125,000k|BitRunners, The Black Hand|Cranial Signal Processors - Gen III|+2% faster hack(), grow(), and weaken(), +20% hack() power, +25% grow() power.
+Cranial Signal Processors - Gen V|$2,250b|250,000k|BitRunners|Cranial Signal Processors - Gen IV|+30% hacking skill, +25% hack() power, +75% grow() power.
+CRTX42-AA Gene Modification|$225,000m|45,000k|NiteSec|Aucun|+8% hacking skill, +15% hacking exp.
+DataJack|$450,000m|112,500k|BitRunners, Chongqing, New Tokyo, NiteSec, The Black Hand|Aucun|+25% hack() power.
+DermaForce Particle Barrier|$50,000m|15,000k|Volhaven|Aucun|+40% defense skill.
+ECorp HVMind Implant|$5,500b|1,500m|ECorp|Aucun|+300% grow().
+Embedded Netburner Module|$250,000m|15,000k|BitRunners, Blade Industries, ECorp, Fulcrum Secret Technologies, MegaCorp, NWO, NiteSec, The Black Hand|Aucun|+8% hacking skill.
+Embedded Netburner Module Analyze Engine|$6,000b|625,000k|Daedalus, ECorp, Fulcrum Secret Technologies, Illuminati, MegaCorp, NWO, The Covenant|Embedded Netburner Module|+10% faster hack(), grow(), and weaken().
+Embedded Netburner Module Core Implant|$2,500b|175,000k|BitRunners, Blade Industries, ECorp, Fulcrum Secret Technologies, MegaCorp, NWO, The Black Hand|Embedded Netburner Module|+7% hacking skill, +7% hacking exp, +3% faster hack(), grow(), and weaken(), +3% hack() success chance, +10% hack() power.
+Embedded Netburner Module Core V2 Upgrade|$4,500b|1,000m|BitRunners, Blade Industries, ECorp, Fulcrum Secret Technologies, KuaiGong International, MegaCorp, NWO, OmniTek Incorporated|Embedded Netburner Module Core Implant|+8% hacking skill, +15% hacking exp, +5% faster hack(), grow(), and weaken(), +5% hack() success chance, +30% hack() power.
+Embedded Netburner Module Core V3 Upgrade|$7,500b|1,750m|Daedalus, ECorp, Fulcrum Secret Technologies, Illuminati, MegaCorp, NWO, The Covenant|Embedded Netburner Module Core V2 Upgrade|+10% hacking skill, +25% hacking exp, +5% faster hack(), grow(), and weaken(), +10% hack() success chance, +40% hack() power.
+Embedded Netburner Module Direct Memory Access Upgrade|$7,000b|1,000m|Daedalus, ECorp, Fulcrum Secret Technologies, Illuminati, MegaCorp, NWO, The Covenant|Embedded Netburner Module|+20% hack() success chance, +40% hack() power.
+Enhanced Myelin Sheathing|$1,375b|100,000k|BitRunners, Fulcrum Secret Technologies, The Black Hand|Aucun|+8% hacking skill, +10% hacking exp, +3% faster hack(), grow(), and weaken().
+Enhanced Social Interaction Implant|$1,375b|375,000k|Bachman & Associates, Clarke Incorporated, Four Sigma, NWO, OmniTek Incorporated|Aucun|+60% Charisma skill, +60% charisma exp.
+FocusWire|$900,000m|75,000k|Bachman & Associates, Clarke Incorporated, Four Sigma, KuaiGong International|Aucun|+5% exp for all skills, +10% reputation from companies, +20% work money.
+Graphene Bionic Arms Upgrade|$3,750b|500,000k|The Dark Army|Bionic Arms|+85% strength skill, +85% dexterity skill.
+Graphene Bionic Legs Upgrade|$4,500b|750,000k|ECorp, Fulcrum Secret Technologies, MegaCorp|Bionic Legs|+150% agility skill.
+Graphene Bionic Spine Upgrade|$6,000b|1,625m|ECorp, Fulcrum Secret Technologies|Bionic Spine|+60% combat skills.
+Graphene Bone Lacings|$4,250b|1,125m|Fulcrum Secret Technologies, The Covenant|Aucun|+70% strength skill, +70% defense skill.
+Graphene BrachiBlades Upgrade|$2,500b|225,000k|Speakers for the Dead|BrachiBlades|+40% strength skill, +40% defense skill, +30% crime money, +10% crime success rate.
+Hacknet Node Cache Architecture Neural-Upload|$5,500m|2,500k|Netburners|Aucun|+10% hacknet production, -15% hacknet nodes upgrade cost.
+Hacknet Node Core Direct-Neural Interface|$60,000m|12,500k|Netburners|Aucun|+45% hacknet production.
+Hacknet Node CPU Architecture Neural-Upload|$11,000m|3,750k|Netburners|Aucun|+15% hacknet production, -15% hacknet nodes cost.
+Hacknet Node Kernel Direct-Neural Interface|$40,000m|7,500k|Netburners|Aucun|+25% hacknet production.
+Hacknet Node NIC Architecture Neural-Upload|$4,500m|1,875k|Netburners|Aucun|+10% hacknet production, -10% hacknet nodes cost.
+HemoRecirculator|$45,000m|10,000k|Tetrads, The Dark Army, The Syndicate|Aucun|+8% combat skills.
+Hydroflame Left Arm|$2,500t|1,250m|NWO|Aucun|+170% strength skill.
+HyperSight Corneal Implant|$2,750b|150,000k|Blade Industries, KuaiGong International|Aucun|+40% dexterity skill, +3% faster hack(), grow(), and weaken(), +10% hack() power.
+INFRARET Enhancement|$30,000m|7,500k|Ishima|Aucun|+10% dexterity skill, +10% crime money, +25% crime success rate.
+LuminCloaking-V1 Skin Implant|$5,000m|1,500k|Slum Snakes, Tetrads|Aucun|+5% agility skill, +10% crime money.
+LuminCloaking-V2 Skin Implant|$30,000m|5,000k|Slum Snakes, Tetrads|LuminCloaking-V1 Skin Implant|+10% defense skill, +10% agility skill, +25% crime money.
+Nanofiber Weave|$125,000m|37,500k|Blade Industries, Fulcrum Secret Technologies, OmniTek Incorporated, Speakers for the Dead, The Dark Army, The Syndicate, Tian Di Hui|Aucun|+20% strength skill, +20% defense skill.
+NEMEAN Subdermal Weave|$3,250b|875,000k|Daedalus, Fulcrum Secret Technologies, Illuminati, The Covenant, The Syndicate|Aucun|+120% defense skill.
+Neotra|$2,875b|562,500k|Blade Industries|Aucun|+55% strength skill, +55% defense skill.
+Neural Accelerator|$1,750b|200,000k|BitRunners|Aucun|+10% hacking skill, +15% hacking exp, +20% hack() power.
+Neural-Retention Enhancement|$250,000m|20,000k|NiteSec|Aucun|+25% hacking exp.
+Neuralstimulator|$3,000b|50,000k|Aevum, Bachman & Associates, Chongqing, Clarke Incorporated, Four Sigma, Ishima, New Tokyo, Sector-12, The Black Hand, Volhaven|Aucun|+12% hacking exp, +2% faster hack(), grow(), and weaken(), +10% hack() success chance.
+Neuregen Gene Modification|$375,000m|37,500k|Chongqing|Aucun|+40% hacking exp.
+NeuroFlux Governor - Level 1|$750,000k|500|All factions except specials|Aucun|This special augmentation can be leveled up infinitely. Each level of this augmentation increases MOST multipliers by 1%, stacking multiplicatively.
+Neuronal Densification|$1,375b|187,500k|Clarke Incorporated|Aucun|+15% hacking skill, +10% hacking exp, +3% faster hack(), grow(), and weaken().
+Neuroreceptor Management Implant|$550,000m|75,000k|Tian Di Hui|Aucun|This augmentation removes the penalty for not focusing on actions such as working in a job or working for a faction.
+Neurotrainer I|$4,000m|1,000k|Aevum, CyberSec|Aucun|+10% exp for all skills.
+Neurotrainer II|$45,000m|10,000k|BitRunners, NiteSec|Neurotrainer I|+15% exp for all skills.
+Neurotrainer III|$130,000m|25,000k|Four Sigma, NWO|Neurotrainer II|+20% exp for all skills.
+nextSENS Gene Modification|$1,925b|437,500k|Clarke Incorporated|Aucun|+20% all skills.
+Nuoptimal Nootropic Injector Implant|$20,000m|5,000k|Bachman & Associates, Chongqing, Clarke Incorporated, Four Sigma, New Tokyo, Tian Di Hui, Volhaven|Aucun|+20% reputation from companies.
+NutriGen Implant|$2,500m|6,250k|New Tokyo|Aucun|+20% combat exp.
+OmniTek InfoLoad|$2,875b|625,000k|OmniTek Incorporated|Aucun|+20% hacking skill, +25% hacking exp.
+PC Direct-Neural Interface|$3,750b|375,000k|Blade Industries, ECorp, Four Sigma, OmniTek Incorporated|Aucun|+8% hacking skill, +30% reputation from companies.
+PC Direct-Neural Interface NeuroNet Injector|$7,500b|1,500m|Fulcrum Secret Technologies|PC Direct-Neural Interface|+10% hacking skill, +5% faster hack(), grow(), and weaken(), +100% reputation from companies.
+PC Direct-Neural Interface Optimization Submodule|$4,500b|500,000k|Blade Industries, ECorp, Fulcrum Secret Technologies|PC Direct-Neural Interface|+10% hacking skill, +75% reputation from companies.
+PCMatrix|$2,000b|100,000k|Aevum|PC Direct-Neural Interface|+7.77% Charisma skill, +7.77% charisma exp, +7.77% reputation from factions and companies, +7.77% crime money, +7.77% crime success rate, +77.7% work money, Start with DeepscanV1.exe and AutoLink.exe after installing Augmentations.
+Photosynthetic Cells|$2,750b|562,500k|KuaiGong International|Aucun|+40% strength skill, +40% defense skill, +40% agility skill.
+Power Recirculation Core|$180,000m|25,000k|NWO, Tetrads, The Dark Army, The Syndicate|Aucun|+5% all skills, +10% exp for all skills.
+QLink|$25,000t|1,875m|Illuminati|Aucun|+75% hacking skill, +100% faster hack(), grow(), and weaken(), +150% hack() success chance, +300% hack() power.
+SmartJaw|$2,750b|375,000k|Bachman & Associates|Aucun|+50% Charisma skill, +50% charisma exp, +25% reputation from factions and companies.
+SmartSonar Implant|$75,000m|22,500k|Slum Snakes|Aucun|+10% dexterity skill, +15% dexterity exp, +25% crime money.
+Social Negotiation Assistant (S.N.A)|$30,000m|6,250k|Tian Di Hui|Aucun|+15% reputation from factions and companies, +10% work money.
+Speech Enhancement|$12,500m|2,500k|Bachman & Associates, Clarke Incorporated, Four Sigma, KuaiGong International, Speakers for the Dead, Tian Di Hui|Aucun|+10% Charisma skill, +10% reputation from companies.
+Speech Processor Implant|$50,000m|7,500k|Aevum, Chongqing, Ishima, New Tokyo, Sector-12, Silhouette, Tian Di Hui, Volhaven|Aucun|+20% Charisma skill.
+SPTN-97 Gene Modification|$4,875b|1,250m|The Covenant|Aucun|+15% hacking skill, +75% combat skills.
+Synaptic Enhancement Implant|$7,500m|2,000k|Aevum, CyberSec|Aucun|+3% faster hack(), grow(), and weaken().
+Synfibril Muscle|$1,125b|437,500k|Blade Industries, Daedalus, Fulcrum Secret Technologies, Illuminati, KuaiGong International, NWO, Speakers for the Dead, The Covenant|Aucun|+30% strength skill, +30% defense skill.
+Synthetic Heart|$2,875b|750,000k|Daedalus, Fulcrum Secret Technologies, Illuminati, KuaiGong International, NWO, Speakers for the Dead, The Covenant|Aucun|+50% strength skill, +50% agility skill.
+The Black Hand|$550,000m|100,000k|The Black Hand|Aucun|+10% hacking skill, +15% strength skill, +15% dexterity skill, +2% faster hack(), grow(), and weaken(), +10% hack() power.
+The Shadow's Simulacrum|$400,000m|37,500k|Speakers for the Dead, The Dark Army, The Syndicate|Aucun|+15% reputation from factions and companies.
+TITN-41 Gene-Modification Injection|$190,000m|25,000k|Silhouette|Aucun|+15% Charisma skill, +15% charisma exp.
+Unstable Circadian Modulator|$5,000b|362,500k|Speakers for the Dead|Aucun|Effects (gimmick is that its stats are randomized every hour): +15% reputation from factions, +25% reputation from companies, +70% work money, +100% crime money, +100% crime success rate, +10% faster hack(), grow(), and weaken(), +25% hack() success chance, +25% hack() power, +10% grow() power, +50% charisma skill, +100% charisma exp, +25% combat skills, +100% combat exp, +20% hacknet production, -15% hacknet node cost, +70% work money, +25% reputation from companies, +15% reputation from factions.
+Wired Reflexes|$2,500m|1,250k|Aevum, Ishima, Sector-12, Slum Snakes, Speakers for the Dead, The Dark Army, The Syndicate, Tian Di Hui, Volhaven|Aucun|+5% dexterity skill, +5% agility skill.
+Xanipher|$4,250b|875,000k|NWO|Aucun|+20% all skills, +15% exp for all skills.
+The Red Pill|$0,000|2,500m|Daedalus|Aucun|Open the Cave server.
+Spéciale: 
+
+Church of the Machine God :
+Requirements: BitNode 13 or SourdeFile 13, Visit church in Chongqing, 0 augmentations
+Stanek's Gift - Awakening|$0,000|0|Church of the Machine God|Aucun|The penalty for the gift is reduced to 5%.
+Stanek's Gift - Genesis|$0,000|0|Church of the Machine God|Stanek's Gift - Awakening|Its unstable nature decreases all your stats by 10%.
+Stanek's Gift - Serenity|$0,000|0|Church of the Machine God|Stanek's Gift - Awakening|Staneks Gift has no penalty.
+
+Shadows of Anarchy :
+Requirements: Success Company infiltration
+SoA - Beauty of Aphrodite|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Bribe minigame easier by indicating the incorrect paths.
+SoA - Chaos of Dionysus|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Backwards minigame easier by flipping the words.
+SoA - Flood of Poseidon|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Symbol matching minigame easier by indicating the correct choice.
+SoA - Hunt of Artemis|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Minesweeper minigame easier by showing the location of all mines and keeping their position.
+SoA - Knowledge of Apollo|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Wire Cutting minigame easier by indicating the incorrect wires.
+SoA - Might of Ares|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Slash minigame easier by showing you via an indicator when the slash in coming.
+SoA - phyzical WKS harmonizer|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes many aspects of infiltration easier and more productive. Such as increased timer, rewards, reduced damage taken, etc.
+SoA - Trickery of Hermes|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Cheat Code minigame easier by allowing the opposite character.
+SoA - Wisdom of Athena|$1,000m|10,000k|Shadows of Anarchy|Aucun|This augmentation makes the Bracket minigame easier by removing all '[' ']'.
+
+Bladeburners :
+Requirements: In BitNode 6 or 7, or SourceFile 6 or 7,  Bladeburner Division rank 25
+EsperTech Bladeburner Eyewear|$165,000m|1,250k|Bladeburners|Aucun|+5% dexterity skill, +3% Bladeburner Contracts and Operations success chance.
+EMS-4 Recombination|$275,000m|2,500k|Bladeburners|Aucun|+2% Bladeburner Stamina gain, +5% Bladeburner Field Analysis effectiveness, +3% Bladeburner Contracts and Operations success chance.
+ORION-MKIV Shoulder|$550,000m|6,250k|Bladeburners|Aucun|+5% strength skill, +5% defense skill, +5% dexterity skill, +4% Bladeburner Contracts and Operations success chance.
+BLADE-51b Tesla Armor: IPU Upgrade|$1,100b|15,000k|Bladeburners|BLADE-51b Tesla Armor|+15% Bladeburner Field Analysis effectiveness, +2% Bladeburner Contracts and Operations success chance.
+BLADE-51b Tesla Armor|$1,375b|12,500k|Bladeburners|Aucun|+4% combat skills, +2% Bladeburner Stamina gain, +3% Bladeburner Contracts and Operations success chance.
+Hyperion Plasma Cannon V1|$2,750b|12,500k|Bladeburners|Aucun|+6% Bladeburner Contracts and Operations success chance.
+Vangelis Virus|$2,750b|18,750k|Bladeburners|Aucun|+10% dexterity exp, +10% Bladeburner Field Analysis effectiveness, +4% Bladeburner Contracts and Operations success chance.
+BLADE-51b Tesla Armor: Power Cells Upgrade|$2,750b|18,750k|Bladeburners|BLADE-51b Tesla Armor|+5% Bladeburner Max Stamina, +2% Bladeburner Stamina gain, +5% Bladeburner Contracts and Operations success chance.
+Hyperion Plasma Cannon V2|$5,500b|25,000k|Bladeburners|Hyperion Plasma Cannon V1|+8% Bladeburner Contracts and Operations success chance.
+I.N.T.E.R.L.I.N.K.E.D|$5,500b|25,000k|Bladeburners|Aucun|+5% combat exp, +10% Bladeburner Max Stamina.
+BLADE-51b Tesla Armor: Energy Shielding Upgrade|$5,500b|21,250k|Bladeburners|BLADE-51b Tesla Armor|+5% defense skill, +6% Bladeburner Contracts and Operations success chance.
+Blade's Runners|$8,250b|20,000k|Bladeburners|Aucun|+5% agility skill, +5% Bladeburner Max Stamina, +5% Bladeburner Stamina gain.
+GOLEM Serum|$11,000b|31,250k|Bladeburners|Aucun|+7% combat skills, +5% Bladeburner Stamina gain.
+Vangelis Virus 3.0|$11,000b|37,500k|Bladeburners|Vangelis Virus|+10% defense exp, +10% dexterity exp, +15% Bladeburner Field Analysis effectiveness, +5% Bladeburner Contracts and Operations success chance.
+BLADE-51b Tesla Armor: Unibeam Upgrade|$16,500b|31,250k|Bladeburners|BLADE-51b Tesla Armor|+8% Bladeburner Contracts and Operations success chance.
+BLADE-51b Tesla Armor: Omnibeam Upgrade|$27,500b|62,500k|Bladeburners|BLADE-51b Tesla Armor: Unibeam Upgrade|+10% Bladeburner Contracts and Operations success chance.
+The Blade's Simulacrum|$150,000b|1,250k|Bladeburners|Aucun|This augmentation allows you to perform Bladeburner actions and other actions (such as working, commiting crimes, etc.) at the same time.
