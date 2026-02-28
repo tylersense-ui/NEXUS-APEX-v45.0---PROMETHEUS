@@ -239,7 +239,7 @@ function displayDetailed(ns, cache) {
     // ═══════════════════════════════════════════════════════════════════════════════
     
     ns.print(`${colors.SUCCESS}╔════════════════════════════════════════════════════════════╗${colors.RESET}`);
-    ns.print(`${colors.SUCCESS}║      NEXUS-APEX v45.0 - PROMETHEUS DASHBOARD             ║${colors.RESET}`);
+    ns.print(`${colors.SUCCESS}║      NEXUS-APEX v45.0 - PROMETHEUS DASHBOARD               ║${colors.RESET}`);
     ns.print(`${colors.SUCCESS}╚════════════════════════════════════════════════════════════╝${colors.RESET}`);
     ns.print("");
     
