@@ -27,6 +27,7 @@ export async function main(ns) {
         root: [
             { remote: "boot.js", local: "boot.js" },
             { remote: "global-kill.js", local: "global-kill.js" },
+            { remote: "global-kill-lite.js", local: "global-kill-lite.js" },
             { remote: "Liste_Cannonique_augmentations_bitburner.txt", local: "Liste_Cannonique_augmentations_bitburner.txt"}
         ],
         core: [
@@ -68,8 +69,8 @@ export async function main(ns) {
             { remote: "tools/set-share.js", local: "tools/set-share.js" },
             { remote: "tools/shop.js", local: "tools/shop.js" },
             { remote: "tools/liquidate.js", local: "tools/liquidate.js" },
-            { remote: "tools/nexus-greedy-swarm-v2.js", local: "tools/nexus-greedy-swarm-v2.js"},
-        ]
+            { remote: "tools/nexus-greedy-swarm-v2.js", local: "tools/nexus-greedy-swarm-v2.js"}
+        ],
     };
 
     const args = ns.args.map(a => String(a).toLowerCase());

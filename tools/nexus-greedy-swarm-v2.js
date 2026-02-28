@@ -237,7 +237,7 @@ export async function main(ns) {
             const network = new Network(ns);
             network.refresh();
             
-            const allServers = network.getAll();
+            const allServers = network.getAllServers();
             const hackers = allServers.filter(s => s.hasAdminRights && s.maxRam > 0);
             
             // ═══════════════════════════════════════════════════════════════════════
