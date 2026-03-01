@@ -61,6 +61,7 @@ import { Network } from "/lib/network.js";
 import { RamManager } from "/core/ram-manager.js";
 import { Logger } from "/lib/logger.js";
 import { CONFIG } from "/lib/constants.js";
+import { Capabilities } from "/lib/capabilities.js";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════════
@@ -234,10 +235,12 @@ export async function main(ns) {
             // ═══════════════════════════════════════════════════════════════════════
             // 🌐 SCAN DU RÉSEAU
             // ═══════════════════════════════════════════════════════════════════════
-            const network = new Network(ns);
-            network.refresh();
+            const caps = new Capabilities(ns);
+            const network = new Network(ns, caps);
+            const hostnames = network.refresh();
             
-            const allServers = network.getAllServers();
+            // Convertir hostnames en objets Server
+            const allServers = hostnames.map(hostname => ns.getServer(hostname));
             const hackers = allServers.filter(s => s.hasAdminRights && s.maxRam > 0);
             
             // ═══════════════════════════════════════════════════════════════════════
