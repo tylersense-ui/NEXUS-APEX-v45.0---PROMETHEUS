@@ -61,7 +61,6 @@ import { Network } from "/lib/network.js";
 import { RamManager } from "/core/ram-manager.js";
 import { Logger } from "/lib/logger.js";
 import { CONFIG } from "/lib/constants.js";
-import { Capabilities } from "/lib/capabilities.js";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════════
@@ -76,7 +75,7 @@ const SWARM_CONFIG = {
     CYCLE_DELAY: 1000,
     
     /** Pourcentage minimum d'argent sur la cible */
-    MIN_MONEY_PERCENT: 0.75,
+    MIN_MONEY_PERCENT: 0.10,  // 10% au lieu de 75%
     
     /** Sécurité maximum acceptable */
     MAX_SECURITY_THRESHOLD: 100
@@ -144,7 +143,7 @@ function showHelp(ns) {
  */
 function scoreTarget(ns, server, player) {
     // Vérifier les conditions minimales
-    if (server.requiredHackingSkill > player.skills.hacking) {
+    if (server.requiredHackingSkill > player.hacking) {
         return 0;
     }
     
@@ -235,12 +234,10 @@ export async function main(ns) {
             // ═══════════════════════════════════════════════════════════════════════
             // 🌐 SCAN DU RÉSEAU
             // ═══════════════════════════════════════════════════════════════════════
-            const caps = new Capabilities(ns);
-            const network = new Network(ns, caps);
-            const hostnames = network.refresh();
+            const network = new Network(ns);
+            network.refresh();
             
-            // Convertir hostnames en objets Server
-            const allServers = hostnames.map(hostname => ns.getServer(hostname));
+            const allServers = network.getAllServers();
             const hackers = allServers.filter(s => s.hasAdminRights && s.maxRam > 0);
             
             // ═══════════════════════════════════════════════════════════════════════
@@ -254,13 +251,25 @@ export async function main(ns) {
                 target = config.target;
             } else {
                 // Scoring automatique
+                let serversScored = 0;
                 for (const server of allServers) {
                     const score = scoreTarget(ns, server, player);
+                    
+                    if (score > 0) {
+                        serversScored++;
+                        if (!config.quiet && log.debugEnabled) {
+                            log.debug(`🎯 ${server.hostname}: score=${ns.formatNumber(score)}`);
+                        }
+                    }
                     
                     if (score > bestScore) {
                         bestScore = score;
                         target = server.hostname;
                     }
+                }
+                
+                if (!config.quiet && serversScored > 0) {
+                    log.info(`📊 ${serversScored} cibles scorées, meilleure: ${target}`);
                 }
             }
             
