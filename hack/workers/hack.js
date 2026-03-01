@@ -96,13 +96,10 @@ export async function main(ns) {
     // ═══════════════════════════════════════════════════════════════════════════════
     
     if (delay > 0) {
-        if (ns.getPlayer().has("Formulas.exe")) {
-            // Si Formulas disponible, le délai est précis
-            await ns.sleep(delay);
-        } else {
-            // Sinon, on ajoute un petit buffer pour la synchronisation
-            await ns.sleep(delay);
-        }
+        // Le délai est appliqué indépendamment de la disponibilité de Formulas.exe
+        // Note: Le code original avait un bug (ns.getPlayer().has() n'existe pas)
+        // et était inutile car les deux branches faisaient la même chose
+        await ns.sleep(delay);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
