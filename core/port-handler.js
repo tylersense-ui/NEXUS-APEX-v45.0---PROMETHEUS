@@ -365,7 +365,7 @@ export class PortHandler {
      *       ns.tprint("❌ Port 4 définitivement bloqué");
      *   }
      */
-    async writeJSONWithRetry(portId, obj, maxRetries = 5, baseDelay = 50) {
+    async writeJSONWithRetry(portId, obj, maxRetries = 10, baseDelay = 25) {
         let delay = baseDelay;
         
         for (let attempt = 0; attempt < maxRetries; attempt++) {

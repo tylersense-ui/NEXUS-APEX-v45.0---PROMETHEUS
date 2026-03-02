@@ -731,31 +731,33 @@ export class Batcher {
      * @returns {Promise<number>} Nombre de threads dispatchés
      */
     async _dispatchJobs(jobs) {
-        let threadsDispatched = 0;
-        
-        for (const job of jobs) {
-            try {
-                // Écrire dans le port avec retry
-                const success = await this.portHandler.writeJSONWithRetry(
-                    CONFIG.PORTS.COMMANDS,
-                    job,
-                    5,  // 5 tentatives
-                    50  // 50ms de base
-                );
-                
-                if (success) {
-                    threadsDispatched += job.threads;
-                } else {
-                    this.log.warn(`⚠️  Échec dispatch ${job.type} sur ${job.host}`);
-                }
-                
-            } catch (error) {
-                this.log.error(`Erreur dispatch: ${error.message}`);
+    let threadsDispatched = 0;
+    
+    for (const job of jobs) {
+        try {
+            const success = await this.portHandler.writeJSONWithRetry(
+                CONFIG.PORTS.COMMANDS,
+                job,
+                5,
+                50
+            );
+            
+            if (success) {
+                threadsDispatched += job.threads;
+            } else {
+                this.log.warn(`⚠️  Échec dispatch ${job.type} sur ${job.host}`);
             }
+            
+            // ✅ DÉLAI ANTI-CONTENTION : 10ms entre chaque dispatch
+            await this.ns.sleep(10);
+            
+        } catch (error) {
+            this.log.error(`Erreur dispatch: ${error.message}`);
         }
-        
-        return threadsDispatched;
     }
+    
+    return threadsDispatched;
+}
 
 
     /**
