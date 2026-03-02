@@ -11,7 +11,7 @@
  * @description LE CŒUR DE PROMETHEUS - Calcule et dispatch les batchs HWGW optimaux.
  *              Implémente EV/s dynamic hackPercent, FFD packing avec JOB SPLITTING.
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.2 - PROMETHEUS PATCHED + BUGFIX
+ * @version     45.3 - PROMETHEUS PATCHED + BUGFIX
  * @date        2026-03-02
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
@@ -814,3 +814,4 @@ export async function main(ns) {
     ns.tprint("Le batcher nécessite Network, RamManager, PortHandler et Capabilities.");
     ns.tprint("Utilisez l'orchestrator pour une intégration complète.");
 }
+
