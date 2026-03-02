@@ -81,7 +81,8 @@ export class Batcher {
             lastBatchTime: 0,
             optimalHackPercents: {}, // Cache des hackPercent optimaux par target
             jobsSplit: 0,             // NOUVEAU : Nombre de jobs découpés
-            totalSubjobs: 0           // NOUVEAU : Nombre total de sous-jobs créés
+            totalSubjobs: 0,           // NOUVEAU : Nombre total de sous-jobs créés
+            prepBatchesCreated: 0     // NOUVEAU v45.3
         };
         
         /** @type {boolean} Mode debug (depuis CONFIG) */
@@ -107,14 +108,30 @@ export class Batcher {
      * @param {string} target - Hostname de la cible
      * @returns {Promise<Object>} Résultats du batch { success, jobs, threadsUsed }
      */
-    async executeBatch(target) {
+    
+       async executeBatch(target) {
         try {
-            // 1. Préparer le serveur (weaken si nécessaire)
-            const prepared = await this._prepareTarget(target);
-            if (!prepared) {
-                this.log.warn(`⚠️  Préparation échouée pour ${target}`);
-                return { success: false, jobs: [], threadsUsed: 0 };
+            // 1. Vérifier si le serveur nécessite préparation (v45.3)
+            const server = this.ns.getServer(target);
+            const prepStatus = this._checkPrepStatus(server);
+
+            if (!prepStatus.ready) {
+                const prepJobs = this._createPrepBatch(target, prepStatus);
+                
+                if (!prepJobs || prepJobs.length === 0) {
+                    return { success: false, jobs: [], threadsUsed: 0 };
+                }
+                
+                const packedJobs = this._packJobs(prepJobs);
+                const dispatched = await this._dispatchJobs(packedJobs);
+                
+                this._metrics.batchesCreated++;
+                this._metrics.prepBatchesCreated++;
+                
+                return { success: dispatched > 0, jobs: packedJobs, threadsUsed: dispatched };
             }
+
+            // Serveur prêt → Continuer avec batch HWGW normal
             
             // 2. Calculer le hackPercent optimal (EV/s)
             const hackPercent = this._calculateOptimalHackPercent(target);
@@ -216,6 +233,95 @@ export class Batcher {
         this.log.success(`✅ Optimal hackPercent pour ${target}: ${(bestPercent * 100).toFixed(1)}% (EV/s: ${this.ns.formatNumber(bestEVPerSec)})`);
         
         return bestPercent;
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * 🆕 v45.3 : VÉRIFIER STATUT DE PRÉPARATION
+     * ═══════════════════════════════════════════════════════════════════════════════
+     */
+    _checkPrepStatus(server) {
+        const securityMargin = 5;
+        const moneyThreshold = 0.75;
+        
+        const securityDelta = server.hackDifficulty - server.minDifficulty;
+        const moneyPercent = server.moneyAvailable / server.moneyMax;
+        
+        const securityOK = securityDelta <= securityMargin;
+        const moneyOK = moneyPercent >= moneyThreshold;
+        
+        if (securityOK && moneyOK) {
+            return {
+                ready: true,
+                needsWeaken: false,
+                needsGrow: false
+            };
+        }
+        
+        return {
+            ready: false,
+            needsWeaken: !securityOK,
+            needsGrow: !moneyOK,
+            securityDelta: securityDelta,
+            moneyPercent: moneyPercent
+        };
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * 🆕 v45.3 : CRÉER BATCH DE PRÉPARATION
+     * ═══════════════════════════════════════════════════════════════════════════════
+     */
+    _createPrepBatch(target, prepStatus) {
+        const server = this.ns.getServer(target);
+        const { weakenRam, growRam } = this._getWorkerRamCosts();
+        const jobs = [];
+        
+        if (prepStatus.needsWeaken) {
+            const securityToReduce = prepStatus.securityDelta;
+            let weakenThreads = Math.ceil(securityToReduce / 0.05);
+            weakenThreads = Math.min(weakenThreads, 5000);
+            
+            if (weakenThreads > 0) {
+                jobs.push({
+                    type: 'weaken',
+                    target: target,
+                    threads: weakenThreads,
+                    delay: 0,
+                    ramPerThread: weakenRam
+                });
+            }
+        }
+        
+        if (prepStatus.needsGrow) {
+            const currentMoney = Math.max(1, server.moneyAvailable);
+            const targetMoney = server.moneyMax;
+            const growMultiplier = targetMoney / currentMoney;
+            
+            let growThreads = Math.ceil(this.ns.growthAnalyze(target, growMultiplier));
+            growThreads = Math.min(growThreads, 5000);
+            
+            if (growThreads > 0) {
+                jobs.push({
+                    type: 'grow',
+                    target: target,
+                    threads: growThreads,
+                    delay: 0,
+                    ramPerThread: growRam
+                });
+                
+                const compensateWeakenThreads = Math.ceil((growThreads * 0.004) / 0.05);
+                jobs.push({
+                    type: 'weaken',
+                    target: target,
+                    threads: compensateWeakenThreads,
+                    delay: 0,
+                    ramPerThread: weakenRam
+                });
+            }
+        }
+        
+        return jobs;
     }
 
     /**
@@ -634,31 +740,6 @@ export class Batcher {
         return threadsDispatched;
     }
 
-    /**
-     * ═══════════════════════════════════════════════════════════════════════════════
-     * 🛠️ PRÉPARATION DE CIBLE
-     * ═══════════════════════════════════════════════════════════════════════════════
-     * Prépare une cible (weaken à minDifficulty, grow à moneyMax si nécessaire).
-     * 
-     * @private
-     * @param {string} target - Hostname
-     * @returns {Promise<boolean>} True si prêt, false sinon
-     */
-    async _prepareTarget(target) {
-        const server = this.ns.getServer(target);
-        
-        // Vérifier si déjà préparé
-        const securityOK = server.hackDifficulty <= server.minDifficulty + 1;
-        const moneyOK = server.moneyAvailable >= server.moneyMax * 0.9;
-        
-        if (securityOK && moneyOK) {
-            return true; // Déjà prêt
-        }
-        
-        // Sinon, préparer (à implémenter si souhaité)
-        // Pour l'instant, on accepte les cibles non-optimales
-        return true;
-    }
 
     /**
      * ═══════════════════════════════════════════════════════════════════════════════
@@ -703,6 +784,7 @@ export class Batcher {
         print(`💾 RAM waste: ${this.ns.formatRam(metrics.totalRamWaste)}`);
         print(`✂️ Jobs découpés: ${metrics.jobsSplit}`);
         print(`📦 Sous-jobs créés: ${metrics.totalSubjobs}`);
+        print(`  - Préparation: ${metrics.prepBatchesCreated || 0}`);
         print("═══════════════════════════════════════════════════════════");
     }
 }
