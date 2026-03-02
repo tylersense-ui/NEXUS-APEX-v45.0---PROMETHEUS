@@ -17,6 +17,23 @@
  * @requires    BitBurner v2.8.1+ (Steam)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔥 PROMETHEUS v45.3 - INTELLIGENT TARGET PREPARATION
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * ✓ NOUVEAU : _checkPrepStatus() - Vérifie si serveur prêt pour HWGW
+ * ✓ NOUVEAU : _createPrepBatch() - Crée batchs de préparation automatiques
+ * ✓ MODIFIÉ : executeBatch() - Gère préparation ET exploitation
+ * ✓ RÉSULTAT : Serveurs automatiquement optimisés avant hacking
+ * 
+ * CHANGEMENTS v45.2 → v45.3 :
+ *   AVANT : Serveurs jamais optimisés (security haute, money bas)
+ *   → QUE DES HACKS, revenus sous-optimaux
+ *   
+ *   APRÈS : Préparation active et intelligente
+ *   → Détecte security/money insuffisants
+ *   → Crée batch weaken+grow+compensate
+ *   → Puis HWGW optimal une fois prêt
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.2 - CRITICAL BUGFIX
  * ═══════════════════════════════════════════════════════════════════════════════════
  * ✓ BUGFIX : hostRAM n'est plus muté entre les jobs
@@ -45,10 +62,10 @@ import { Logger } from "/lib/logger.js";
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════════════
- * 📘 CLASSE BATCHER - LE CŒUR DE PROMETHEUS (PATCHED v45.2)
+ * 📘 CLASSE BATCHER - LE CŒUR DE PROMETHEUS (v45.3 PREP LOGIC)
  * ═══════════════════════════════════════════════════════════════════════════════════
  * Calcule, optimise et dispatch les batchs HWGW avec algorithmes avancés.
- * VERSION PATCHÉE v45.2 avec BUG CRITIQUE fixé.
+ * VERSION v45.3 avec système de préparation intelligente intégré.
  */
 export class Batcher {
     /**
