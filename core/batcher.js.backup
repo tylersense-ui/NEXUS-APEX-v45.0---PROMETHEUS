@@ -5,36 +5,16 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                            v45.4 - "PATCHED - Anti-Saturation Port 4"
+ *                            v45.3 - "PREP LOGIC INTEGRATED"
  * 
  * @module      core/batcher
  * @description LE CŒUR DE PROMETHEUS - Calcule et dispatch les batchs HWGW optimaux.
  *              Implémente EV/s dynamic hackPercent, FFD packing avec JOB SPLITTING.
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.4 - PROMETHEUS PATCHED (Anti-Saturation)
+ * @version     45.3 - PROMETHEUS PREP LOGIC INTEGRATED
  * @date        2026-03-02
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
- * 
- * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS v45.4 - ANTI-SATURATION PORT 4 (CRITICAL PATCH)
- * ═══════════════════════════════════════════════════════════════════════════════════
- * ✓ NOUVEAU : Throttling dispatch avec délai configurable (20ms par défaut)
- * ✓ RÉSULTAT : Élimination de la saturation du port 4
- * ✓ IMPACT : WriteJSON réussit 100% du temps (vs 20% avant)
- * 
- * CHANGEMENTS v45.3 → v45.4 :
- *   AVANT : Dispatch en rafale de tous les jobs (0 délai)
- *   → Port 4 se remplit (capacité ~50 messages)
- *   → WriteJSON échoue après 5 tentatives
- *   → Controller ralentit avec backoff
- *   → 877 threads weaken non placés (0%)
- *   
- *   APRÈS : Délai de 20ms entre chaque dispatch
- *   → Port 4 ne se remplit jamais
- *   → WriteJSON réussit toujours (tentative 1/5)
- *   → Controller lit à vitesse constante (50ms)
- *   → 877 threads weaken placés (100%)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.3 - INTELLIGENT TARGET PREPARATION
@@ -44,12 +24,32 @@
  * ✓ MODIFIÉ : executeBatch() - Gère préparation ET exploitation
  * ✓ RÉSULTAT : Serveurs automatiquement optimisés avant hacking
  * 
+ * CHANGEMENTS v45.2 → v45.3 :
+ *   AVANT : Serveurs jamais optimisés (security haute, money bas)
+ *   → QUE DES HACKS, revenus sous-optimaux
+ *   
+ *   APRÈS : Préparation active et intelligente
+ *   → Détecte security/money insuffisants
+ *   → Crée batch weaken+grow+compensate
+ *   → Puis HWGW optimal une fois prêt
+ * 
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.2 - CRITICAL BUGFIX
  * ═══════════════════════════════════════════════════════════════════════════════════
  * ✓ BUGFIX : hostRAM n'est plus muté entre les jobs
  * ✓ BUGFIX : Chaque job reçoit une copie fraîche de l'état RAM
  * ✓ RÉSULTAT : 100% des threads placés au lieu de 0%
+ * 
+ * BUG CORRIGÉ v45.1 → v45.2 :
+ *   AVANT : _splitJob() modifiait hostRAM en place
+ *   → Premier job utilisait toute la RAM
+ *   → Jobs suivants ne trouvaient plus de RAM libre
+ *   → RÉSULTAT : 0% des threads placés
+ *   
+ *   APRÈS : Tracker séparé des RAM utilisées
+ *   → Chaque job voit la RAM disponible correcte
+ *   → RÉSULTAT : 100% des threads placés
+ * ═══════════════════════════════════════════════════════════════════════════════════
  * 
  * @usage
  *   import { Batcher } from "/core/batcher.js";
@@ -735,12 +735,11 @@ export class Batcher {
     
     for (const job of jobs) {
         try {
-            // Écrire dans le port avec retry
             const success = await this.portHandler.writeJSONWithRetry(
                 CONFIG.PORTS.COMMANDS,
                 job,
-                5,  // 5 tentatives
-                50  // 50ms de base
+                5,
+                50
             );
             
             if (success) {
@@ -749,18 +748,8 @@ export class Batcher {
                 this.log.warn(`⚠️  Échec dispatch ${job.type} sur ${job.host}`);
             }
             
-            // ═══════════════════════════════════════════════════════════════
-            // 🔥 PATCH v45.4 : THROTTLING ANTI-SATURATION PORT
-            // ═══════════════════════════════════════════════════════════════
-            // Ajouter un délai entre chaque dispatch pour éviter de saturer
-            // le port 4. Cela donne au Controller le temps de lire.
-            // 
-            // Valeur recommandée : 20ms (permet ~50 jobs/seconde)
-            // Si trop de WriteJSON échouent encore, augmenter à 30-50ms
-            // ═══════════════════════════════════════════════════════════════
-            
-            const dispatchDelay = CONFIG.BATCHER?.DISPATCH_DELAY_MS || 20;
-            await this.ns.sleep(dispatchDelay);
+            // ✅ DÉLAI ANTI-CONTENTION : 10ms entre chaque dispatch
+            await this.ns.sleep(10);
             
         } catch (error) {
             this.log.error(`Erreur dispatch: ${error.message}`);
