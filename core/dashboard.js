@@ -5,18 +5,34 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.8 - "Real Targets + Playtime"
+ *                           v46.1 - "GODMODE - SYNTAX FIX"
  * 
  * @module      core/dashboard
  * @description Dashboard premium avec design professionnel et auto-tail
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.5 - PROMETHEUS ALIGNED
- * @date        2026-03-02
+ * @version     46.1 - GODMODE (Syntax Error Fix)
+ * @date        2026-03-03
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS v45.5 - ALIGNMENT FIX
+ * 🔥 PROMETHEUS v46.1 - GODMODE (SYNTAX ERROR FIX)
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * ✓ CORRIGÉ v46.1 : Double déclaration 'player' ligne 271 (SyntaxError)
+ * ✓ SOLUTION : Variable 'player' déjà déclarée ligne 154, réutilisation au lieu de redéclaration
+ * ✓ RÉSULTAT : Dashboard s'exécute sans erreur de syntaxe
+ * 
+ * CHANGELOG v45.8 → v46.1 :
+ *   AVANT : const player = ns.getPlayer(); // ligne 154
+ *           ...
+ *           const player = ns.getPlayer(); // ligne 271 ❌ ERREUR
+ *   
+ *   APRÈS : const player = ns.getPlayer(); // ligne 154
+ *           ...
+ *           // player déjà déclaré ligne 154, réutilisation ✅
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔥 PROMETHEUS v45.5 - ALIGNMENT FIX (Historique)
  * ═══════════════════════════════════════════════════════════════════════════════════
  * ✓ CORRIGÉ : Ligne CAPITAL mal alignée (padding incorrect)
  * ✓ CORRIGÉ : Ligne BOURSE mal alignée (padding incorrect)
@@ -268,7 +284,7 @@ function collectData(ns, state, apis) {
     // TIME - v45.8: Temps de jeu au lieu de uptime
     // ═══════════════════════════════════════════════════════════════════════════════
     
-    const player = ns.getPlayer();
+    // player déjà déclaré ligne 154, réutilisation
     
     // Temps depuis dernière augmentation (en ms)
     const playtimeSinceAug = player.playtimeSinceLastAug;
