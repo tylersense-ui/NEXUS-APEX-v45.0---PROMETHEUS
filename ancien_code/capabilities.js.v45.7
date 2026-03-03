@@ -5,7 +5,7 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.8 - "TIX Detection Fixed"
+ *                           v45.0 - "Stealing Fire From The Gods"
  * 
  * @module      lib/capabilities
  * @description Système de détection automatique des APIs et capacités disponibles.
@@ -205,29 +205,17 @@ export class Capabilities {
             if (ns.stock) {
                 /** 
                  * TIX API - Accès au marché boursier (achat/vente d'actions)
-                 * Vérification: tente d'appeler getPrice() qui nécessite TIX API
+                 * Coût: $5b + $25b pour compte
                  * @type {boolean}
                  */
-                try {
-                    // Test si on peut accéder aux prix (nécessite TIX API)
-                    ns.stock.getPrice('FSIG');
-                    this.tix = true;
-                } catch {
-                    this.tix = false;
-                }
+                this.tix = ns.stock.hasTIXAPIAccess();
                 
                 /** 
                  * 4S Data - Accès aux prévisions de marché (getForecast, etc.)
-                 * Vérification: tente d'appeler getForecast() qui nécessite 4S Data
+                 * Coût: $1b additionnel
                  * @type {boolean}
                  */
-                try {
-                    // Test si on peut accéder au forecast (nécessite 4S Data)
-                    ns.stock.getForecast('FSIG');
-                    this.has4S = true;
-                } catch {
-                    this.has4S = false;
-                }
+                this.has4S = ns.stock.has4SDataAPIAccess();
             }
         } catch (e) {
             // L'API stock n'existe pas dans certains BitNodes

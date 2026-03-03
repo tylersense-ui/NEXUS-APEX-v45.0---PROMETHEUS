@@ -5,7 +5,7 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.8 - "Real Targets + Playtime"
+ *                           v45.5 - "DASHBOARD ALIGNED"
  * 
  * @module      core/dashboard
  * @description Dashboard premium avec design professionnel et auto-tail
@@ -265,18 +265,11 @@ function collectData(ns, state, apis) {
     }
     
     // ═══════════════════════════════════════════════════════════════════════════════
-    // TIME - v45.8: Temps de jeu au lieu de uptime
+    // TIME
     // ═══════════════════════════════════════════════════════════════════════════════
     
-    const player = ns.getPlayer();
-    
-    // Temps depuis dernière augmentation (en ms)
-    const playtimeSinceAug = player.playtimeSinceLastAug;
-    data.playtimeSinceAug = formatPlaytime(playtimeSinceAug);
-    
-    // Temps total de jeu (en ms)
-    const totalPlaytime = player.totalPlaytime;
-    data.totalPlaytime = formatPlaytime(totalPlaytime);
+    const uptime = now - state.startTime;
+    data.uptime = formatTime(uptime);
     
     data.currentTime = new Date().toLocaleTimeString("fr-FR");
     
@@ -415,9 +408,7 @@ function drawDashboard(ns, data) {
     
     ns.print(`├${"─".repeat(width - 2)}┤`);
     
-    // v45.8: Afficher temps de jeu (2 lignes)
-    const playtimeLine1 = `⏳ PLAY   : ${data.playtimeSinceAug} (since aug)`;
-    const playtimeLine2 = `         : ${data.totalPlaytime} (total)`;
+    const uptimeLine = `⏳ UPTIME : ${data.uptime}`;
     ns.print(`│ ${uptimeLine.padEnd(width - 4)}│`);
     
     ns.print(`└${"─".repeat(width - 2)}┘`);
@@ -491,105 +482,6 @@ function countThreads(ns, servers) {
  * Obtenir les top cibles
  */
 function getTopTargets(ns, count = 3) {
-    // 🆕 v45.8 : Lire les cibles RÉELLEMENT attaquées en analysant les scripts en cours
-    const targetThreads = new Map(); // Map<targetName, {hack, grow, weaken, total}>
-    
-    // Scanner tous les serveurs
-    const allServers = scanAll(ns);
-    
-    for (const server of allServers) {
-        try {
-            const processes = ns.ps(server);
-            
-            for (const proc of processes) {
-                // Chercher les workers (hack/grow/weaken)
-                const isHack = proc.filename.includes('hack.js');
-                const isGrow = proc.filename.includes('grow.js');
-                const isWeaken = proc.filename.includes('weaken.js');
-                
-                if (isHack || isGrow || isWeaken) {
-                    // Premier arg = target
-                    const target = proc.args[0];
-                    if (!target) continue;
-                    
-                    // Initialiser si besoin
-                    if (!targetThreads.has(target)) {
-                        targetThreads.set(target, {
-                            hack: 0,
-                            grow: 0,
-                            weaken: 0,
-                            total: 0
-                        });
-                    }
-                    
-                    const stats = targetThreads.get(target);
-                    const threads = proc.threads;
-                    
-                    if (isHack) stats.hack += threads;
-                    if (isGrow) stats.grow += threads;
-                    if (isWeaken) stats.weaken += threads;
-                    stats.total += threads;
-                }
-            }
-        } catch (e) {
-            // Serveur inaccessible, skip
-        }
-    }
-    
-    // Convertir en array et récupérer les infos serveur
-    const targets = [];
-    
-    for (const [targetName, stats] of targetThreads) {
-        try {
-            const maxMoney = ns.getServerMaxMoney(targetName);
-            const currentMoney = ns.getServerMoneyAvailable(targetName);
-            const moneyPercent = maxMoney > 0 ? currentMoney / maxMoney : 0;
-            
-            const currentSec = ns.getServerSecurityLevel(targetName);
-            const minSec = ns.getServerMinSecurityLevel(targetName);
-            const secDiff = currentSec - minSec;
-            
-            const status = (moneyPercent >= 0.75 && secDiff <= 5) ? "ready" : "prep";
-            
-            // ETA approximatif
-            let eta = "Ready";
-            if (status === "prep") {
-                const estMinutes = Math.ceil(5 + (secDiff * 0.5));
-                eta = `${estMinutes}m`;
-            }
-            
-            targets.push({
-                name: targetName,
-                maxMoney: maxMoney,
-                moneyPercent: moneyPercent,
-                securityDiff: secDiff,
-                status: status,
-                eta: eta,
-                threads: stats.total,
-                hackThreads: stats.hack,
-                growThreads: stats.grow,
-                weakenThreads: stats.weaken
-            });
-        } catch (e) {
-            // Erreur serveur, skip
-        }
-    }
-    
-    // Trier par nombre de threads (les plus attaquées en premier)
-    targets.sort((a, b) => b.threads - a.threads);
-    
-    // Si aucune cible active, retourner les top 3 par potentiel
-    if (targets.length === 0) {
-        return getTopTargetsByPotential(ns, count);
-    }
-    
-    return targets.slice(0, count);
-}
-
-/**
- * Fallback: Top cibles par potentiel (si aucune attaque en cours)
- */
-function getTopTargetsByPotential(ns, count = 3) {
     const allServers = scanAll(ns);
     const targets = [];
     
@@ -614,8 +506,9 @@ function getTopTargetsByPotential(ns, count = 3) {
         const minSec = ns.getServerMinSecurityLevel(server);
         const secDiff = currentSec - minSec;
         
-        const status = (moneyPercent >= 0.75 && secDiff <= 5) ? "ready" : "prep";
+        const status = (moneyPercent >= 0.95 && secDiff <= 1) ? "ready" : "prep";
         
+        // ETA approximatif (5-10 min pour les non-ready)
         let eta = "Ready";
         if (status === "prep") {
             const estMinutes = Math.ceil(5 + (secDiff * 0.5));
@@ -628,15 +521,13 @@ function getTopTargetsByPotential(ns, count = 3) {
             moneyPercent: moneyPercent,
             securityDiff: secDiff,
             status: status,
-            eta: eta,
-            threads: 0,
-            hackThreads: 0,
-            growThreads: 0,
-            weakenThreads: 0
+            eta: eta
         });
     }
     
+    // Trier par max money
     targets.sort((a, b) => b.maxMoney - a.maxMoney);
+    
     return targets.slice(0, count);
 }
 
@@ -792,30 +683,6 @@ function formatNumber(num, compact = false) {
 /**
  * Formater un temps en h:m:s
  */
-
-/**
- * Formater temps de jeu (en millisecondes) en format lisible
- * Format: X days Y hours Z minutes W seconds
- */
-function formatPlaytime(ms) {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    
-    const s = seconds % 60;
-    const m = minutes % 60;
-    const h = hours % 24;
-    
-    const parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (h > 0) parts.push(`${h}h`);
-    if (m > 0) parts.push(`${m}m`);
-    if (s > 0 || parts.length === 0) parts.push(`${s}s`);
-    
-    return parts.join(' ');
-}
-
 function formatTime(ms) {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
