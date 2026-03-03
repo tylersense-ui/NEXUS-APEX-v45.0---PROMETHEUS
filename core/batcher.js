@@ -5,8 +5,7 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                            v45.4 - "PATCHED - Anti-Saturation Port 4"
- * 
+ *                            v45.5 - "PATCHED - Prep Timing Synchronized" 
  * @module      core/batcher
  * @description LE CŒUR DE PROMETHEUS - Calcule et dispatch les batchs HWGW optimaux.
  *              Implémente EV/s dynamic hackPercent, FFD packing avec JOB SPLITTING.
@@ -16,6 +15,25 @@
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
  * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔥 PROMETHEUS v45.5 - PREP BATCH SYNCHRONIZATION (CRITICAL FIX)
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * ✓ BUGFIX : Batches de préparation maintenant synchronisés temporellement
+ * ✓ NOUVEAU : Calcul précis des délais pour WEAKEN/GROW/WEAKEN
+ * ✓ RÉSULTAT : Serveurs progressent vers état "ready" en 20-30min
+ * 
+ * CHANGEMENTS v45.4 → v45.5 :
+ *   AVANT : Tous jobs avec delay=0
+ *   → Ordre d'exécution aléatoire
+ *   → Serveurs oscillent sans converger
+ *   → Profit bloqué à $0/s
+ *   
+ *   APRÈS : Délais calculés pour synchronisation précise
+ *   → WEAKEN termine en dernier
+ *   → GROW termine 200ms avant
+ *   → Progression linéaire vers état "ready"
+ *   → Profit démarre après 20-30min
+ *
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.4 - ANTI-SATURATION PORT 4 (CRITICAL PATCH)
  * ═══════════════════════════════════════════════════════════════════════════════════
@@ -289,57 +307,215 @@ export class Batcher {
      * 🆕 v45.3 : CRÉER BATCH DE PRÉPARATION
      * ═══════════════════════════════════════════════════════════════════════════════
      */
-    _createPrepBatch(target, prepStatus) {
-        const server = this.ns.getServer(target);
-        const { weakenRam, growRam } = this._getWorkerRamCosts();
-        const jobs = [];
+    /**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🆕 v45.5 : CRÉER BATCH DE PRÉPARATION (AVEC TIMING SYNCHRONISÉ)
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 
+ * Crée un batch de préparation pour ramener un serveur à l'état optimal.
+ * 
+ * PRINCIPE DE SYNCHRONISATION :
+ * 1. WEAKEN est l'opération la plus longue (~15min)
+ * 2. GROW dure ~10min
+ * 3. On calcule les délais pour que les opérations se terminent dans l'ordre :
+ *    - WEAKEN1 termine en DERNIER (t=0)
+ *    - GROW termine 200ms avant WEAKEN1
+ *    - WEAKEN2 termine 200ms après GROW
+ * 
+ * TIMELINE EXEMPLE :
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │ T=0min:   WEAKEN1 démarre (durée: 15min, delay=0)                  │
+ * │ T=5min:   GROW démarre (durée: 10min, delay=5min)                  │
+ * │ T=5.2min: WEAKEN2 démarre (durée: 15min, delay=5.2min)             │
+ * │                                                                     │
+ * │ T=15min:  GROW termine → +argent, +security                        │
+ * │ T=15.2min: WEAKEN1 termine → -security (compense hack)             │
+ * │ T=20.2min: WEAKEN2 termine → -security (compense grow)             │
+ * └─────────────────────────────────────────────────────────────────────┘
+ * 
+ * @private
+ * @param {string} target - Hostname de la cible
+ * @param {Object} prepStatus - Statut de préparation depuis _checkPrepStatus()
+ * @returns {Array} Liste des jobs de préparation avec timing précis
+ */
+_createPrepBatch(target, prepStatus) {
+    const server = this.ns.getServer(target);
+    const { weakenRam, growRam } = this._getWorkerRamCosts();
+    const jobs = [];
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 1. CALCULER LES DURÉES D'EXÉCUTION
+    // ═══════════════════════════════════════════════════════════════
+    const weakenTime = this.ns.getWeakenTime(target);
+    const growTime = this.ns.getGrowTime(target);
+    
+    // Espacement minimum entre les fins d'opération
+    const SPACING = 200; // millisecondes
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 2. BATCH DE PRÉPARATION : WEAKEN UNIQUEMENT
+    // ═══════════════════════════════════════════════════════════════
+    if (prepStatus.needsWeaken && !prepStatus.needsGrow) {
+        // Serveur a assez d'argent, juste besoin de réduire security
+        const securityToReduce = prepStatus.securityDelta;
+        let weakenThreads = Math.ceil(securityToReduce / 0.05);
         
-        if (prepStatus.needsWeaken) {
-            const securityToReduce = prepStatus.securityDelta;
-            let weakenThreads = Math.ceil(securityToReduce / 0.05);
-            weakenThreads = Math.min(weakenThreads, 5000);
+        // Limiter à 5000 threads max par job (évite overload)
+        weakenThreads = Math.min(weakenThreads, 100000);
+        
+        if (weakenThreads > 0) {
+            jobs.push({
+                type: "weaken",
+                target: target,
+                threads: weakenThreads,
+                ramPerThread: weakenRam,
+                delay: 0, // Pas besoin de délai si seul job
+                priority: 1,
+                endTime: Date.now() + weakenTime
+            });
             
-            if (weakenThreads > 0) {
-                jobs.push({
-                    type: 'weaken',
-                    target: target,
-                    threads: weakenThreads,
-                    delay: 0,
-                    ramPerThread: weakenRam
-                });
-            }
+            this.log.info(`🛡️ Prep WEAKEN-ONLY: ${weakenThreads}t (-${(weakenThreads * 0.05).toFixed(1)} sec)`);
         }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 3. BATCH DE PRÉPARATION : GROW UNIQUEMENT
+    // ═══════════════════════════════════════════════════════════════
+    else if (prepStatus.needsGrow && !prepStatus.needsWeaken) {
+        // Serveur a security OK, juste besoin d'augmenter l'argent
+        const growthNeeded = 1.0 / prepStatus.moneyPercent;
+        let growThreads = this.ns.growthAnalyze(target, growthNeeded);
+        growThreads = Math.ceil(growThreads);
+        growThreads = Math.min(growThreads, 100000);
         
-        if (prepStatus.needsGrow) {
-            const currentMoney = Math.max(1, server.moneyAvailable);
-            const targetMoney = server.moneyMax;
-            const growMultiplier = targetMoney / currentMoney;
+        if (growThreads > 0) {
+            // GROW termine en premier (délai = 0)
+            jobs.push({
+                type: "grow",
+                target: target,
+                threads: growThreads,
+                ramPerThread: growRam,
+                delay: 0,
+                priority: 1,
+                endTime: Date.now() + growTime
+            });
             
-            let growThreads = Math.ceil(this.ns.growthAnalyze(target, growMultiplier));
-            growThreads = Math.min(growThreads, 5000);
-            
-            if (growThreads > 0) {
-                jobs.push({
-                    type: 'grow',
-                    target: target,
-                    threads: growThreads,
-                    delay: 0,
-                    ramPerThread: growRam
-                });
+            // WEAKEN compensatoire termine 200ms après GROW
+            const compensateWeakenThreads = Math.ceil((growThreads * 0.004) / 0.05);
+            if (compensateWeakenThreads > 0) {
+                // Délai = growTime - weakenTime + SPACING
+                // Pour que weaken termine SPACING ms après grow
+                const weakenDelay = Math.max(0, growTime - weakenTime + SPACING);
                 
-                const compensateWeakenThreads = Math.ceil((growThreads * 0.004) / 0.05);
                 jobs.push({
-                    type: 'weaken',
+                    type: "weaken",
                     target: target,
                     threads: compensateWeakenThreads,
-                    delay: 0,
-                    ramPerThread: weakenRam
+                    ramPerThread: weakenRam,
+                    delay: weakenDelay,
+                    priority: 2,
+                    endTime: Date.now() + weakenDelay + weakenTime
                 });
             }
+            
+            this.log.info(`💪 Prep GROW-ONLY: ${growThreads}t (+${(growthNeeded * 100).toFixed(0)}%)`);
+        }
+    }
+    
+            // ═══════════════════════════════════════════════════════════════
+            // 4. BATCH DE PRÉPARATION : WEAKEN + GROW (CAS COMPLET)
+            // ═══════════════════════════════════════════════════════════════
+            else if (prepStatus.needsWeaken && prepStatus.needsGrow) {
+            // Serveur nécessite à la fois security ET argent
+        
+            // 4a. Calculer WEAKEN initial
+            const securityToReduce = prepStatus.securityDelta;
+            let weakenThreads = Math.ceil(securityToReduce / 0.05);
+            weakenThreads = Math.min(weakenThreads, 100000);
+        
+            // 4b. Calculer GROW
+            const growthNeeded = 1.0 / prepStatus.moneyPercent;
+            let growThreads = this.ns.growthAnalyze(target, growthNeeded);
+            growThreads = Math.ceil(growThreads);
+            growThreads = Math.min(growThreads, 100000);
+        
+            // 4c. Calculer WEAKEN compensatoire pour GROW
+            const compensateWeakenThreads = Math.ceil((growThreads * 0.004) / 0.05);
+        
+            // ───────────────────────────────────────────────────────────
+            // TIMELINE SYNCHRONISÉE :
+            // ───────────────────────────────────────────────────────────
+            // WEAKEN1 termine à T (le plus long, pas de délai)
+            // GROW termine à T - SPACING
+            // WEAKEN2 termine à T + SPACING
+            // ───────────────────────────────────────────────────────────
+        
+            // JOB 1 : WEAKEN initial (réduit security de base)
+            // Termine en DERNIER → delay = 0
+            if (weakenThreads > 0) {
+            jobs.push({
+                type: "weaken",
+                target: target,
+                threads: weakenThreads,
+                ramPerThread: weakenRam,
+                delay: 0,
+                priority: 1,
+                endTime: Date.now() + weakenTime
+            });
         }
         
-        return jobs;
+            // JOB 2 : GROW (augmente l'argent)
+            // Termine SPACING ms AVANT weaken1
+            if (growThreads > 0) {
+            const growDelay = Math.max(0, weakenTime - growTime - SPACING);
+            
+            jobs.push({
+                type: "grow",
+                target: target,
+                threads: growThreads,
+                ramPerThread: growRam,
+                delay: growDelay,
+                priority: 2,
+                endTime: Date.now() + growDelay + growTime
+            });
+        }
+        
+        // JOB 3 : WEAKEN compensatoire (compense la security ajoutée par GROW)
+        // Termine SPACING ms APRÈS weaken1
+        if (compensateWeakenThreads > 0) {
+            const weaken2Delay = SPACING;
+            
+            jobs.push({
+                type: "weaken",
+                target: target,
+                threads: compensateWeakenThreads,
+                ramPerThread: weakenRam,
+                delay: weaken2Delay,
+                priority: 3,
+                endTime: Date.now() + weaken2Delay + weakenTime
+            });
+        }
+        
+        this.log.info(
+            `🔥 Prep FULL: W${weakenThreads}t + G${growThreads}t + W${compensateWeakenThreads}t ` +
+            `(sec:${prepStatus.securityDelta.toFixed(1)} → +5, ` +
+            `money:${(prepStatus.moneyPercent * 100).toFixed(0)}% → 75%)`
+        );
     }
+    
+            // ═══════════════════════════════════════════════════════════════
+            // 5. VALIDATION & RETOUR
+            // ═══════════════════════════════════════════════════════════════
+            if (jobs.length === 0) {
+            this.log.warn(`⚠️ Aucun job de préparation généré pour ${target}`);
+            return null;
+        }
+    
+            // Trier par endTime pour s'assurer de l'ordre d'exécution
+            jobs.sort((a, b) => a.endTime - b.endTime);
+    
+            return jobs;
+        }
 
     /**
      * Calcule l'Expected Value per Second pour un hackPercent donné

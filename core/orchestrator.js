@@ -263,34 +263,63 @@ export async function main(ns) {
                     continue;
                 }
                 
-                // ═══════════════════════════════════════════════════════════════════
-                // 🔥 DISPATCH DES BATCHS
-                // ═══════════════════════════════════════════════════════════════════
-                
+                // ═════════════════════════════════════════════════════════════
+                // 🔥 DISPATCH DES BATCHS (v45.6 - SATURATION RAM 100%)
+                // ═════════════════════════════════════════════════════════════
+
                 for (const target of targets) {
-                    try {
-                        if (log.debugEnabled) {
-                            log.debug(`🔥 Dispatching batch vers ${target}...`);
-                        }
-                        
-                        const result = await batcher.executeBatch(target);
-                        
-                        if (result.success) {
-                            metrics.batchesDispatched++;
-                            
-                            if (log.debugEnabled) {
-                                log.debug(`✅ Batch ${target}: ${result.threadsUsed} threads`);
-                            }
-                        } else {
-                            log.warn(`⚠️  Batch ${target} échoué`);
-                        }
-                        
-                    } catch (error) {
-                        log.error(`Erreur batch ${target}: ${error.message}`);
-                        metrics.totalErrors++;
-                    }
+                let batchCount = 0;
+                let totalThreads = 0;
+                const MAX_BATCHES_PER_TARGET = 100;
+    
+                while (batchCount < MAX_BATCHES_PER_TARGET) {
+                try {
+                // ✅ MÉTHODE CORRIGÉE
+                const ramPools = ramMgr.getRamPools();
+                const freeRAM = ramPools.totalFree;
+            
+                // Stop si moins de 10GB libre (viser 95-100% RAM)
+                if (freeRAM < 10) {
+                if (batchCount === 0) {
+                    log.warn(`⚠️  RAM insuffisante pour ${target} (${freeRAM.toFixed(0)}GB libre)`);
                 }
+                break;
+                }
+            
+                if (log.debugEnabled && batchCount === 0) {
+                log.debug(`🔥 Dispatching batches vers ${target}...`);
+                }
+            
+                const result = await batcher.executeBatch(target);
+            
+                if (result.success && result.threadsUsed > 0) {
+                metrics.batchesDispatched++;
+                batchCount++;
+                totalThreads += result.threadsUsed;
                 
+                if (log.debugEnabled) {
+                    log.debug(`✅ Batch #${batchCount} ${target}: ${result.threadsUsed} threads`);
+                }
+                } else {
+                if (batchCount === 0) {
+                    log.warn(`⚠️  Batch ${target} échoué (aucun thread placé)`);
+                }
+                break;
+                }
+            
+                } catch (error) {
+                log.error(`❌ Erreur batch ${target} #${batchCount + 1}: ${error.message}`);
+                metrics.totalErrors++;
+                break;
+                }
+        }
+    
+                if (batchCount > 0) {
+                log.info(`🎯 ${target}: ${batchCount} batches, ${totalThreads} threads`);
+                }
+        }
+    
+                              
                 // ═══════════════════════════════════════════════════════════════════
                 // 📊 MÉTRIQUES PÉRIODIQUES (toutes les 10 cycles)
                 // ═══════════════════════════════════════════════════════════════════
