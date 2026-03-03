@@ -705,21 +705,7 @@ export class Batcher {
     async _dispatchJobs(jobs) {
         let threadsDispatched = 0;
         
-        // CORRECTION CRITIQUE: Filtrer les jobs invalides (0 threads)
-        const validJobs = jobs.filter(job => {
-            if (!job.threads || job.threads <= 0) {
-                this.log.warn(`⚠️  Job invalide ignoré: ${job.type} avec ${job.threads || 0} threads`);
-                return false;
-            }
-            return true;
-        });
-        
-        if (validJobs.length === 0) {
-            this.log.warn(`⚠️  Aucun job valide à dispatcher (tous avaient 0 threads)`);
-            return 0;
-        }
-        
-        for (const job of validJobs) {
+        for (const job of jobs) {
             try {
                 const success = await this.portHandler.writeJSONWithRetry(
                     CONFIG.PORTS.COMMANDS,
