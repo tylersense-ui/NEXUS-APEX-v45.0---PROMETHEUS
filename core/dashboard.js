@@ -275,7 +275,7 @@ function collectData(ns, state, apis) {
  * ═══════════════════════════════════════════════════════════════════════════════════
  */
 function drawDashboard(ns, data) {
-    const width = 58;
+    const width = 60; // Largeur fixe pour alignement parfait
     
     // ═══════════════════════════════════════════════════════════════════════════════
     // HEADER
@@ -296,7 +296,7 @@ function drawDashboard(ns, data) {
     // SECTION: CAPITAL & PROFIT
     // ═══════════════════════════════════════════════════════════════════════════════
     
-    ns.print(`│ 💰 CAPITAL : ${formatMoney(data.capital).padEnd(width - 16)}│`);
+    ns.print(`│ 💰 CAPITAL : ${formatMoney(data.capital).padEnd(width - 4)}│`);
     
     const profitLine = `📈 PROFIT  : ${formatMoney(data.profit)}/s [REC: ${formatMoney(data.maxProfit)}/s]`;
     ns.print(`│ ${profitLine.padEnd(width - 4)}│`);
@@ -306,7 +306,7 @@ function drawDashboard(ns, data) {
         const stockLine = `💹 BOURSE  : ${formatMoney(data.stockProfit)}/s | Portfolio: ${formatMoney(data.stockValue)}`;
         ns.print(`│ ${stockLine.padEnd(width - 4)}│`);
     } else {
-        ns.print(`│ 💹 BOURSE  : ${"LOCKED (TIX API Requise)".padEnd(width - 16)}│`);
+        ns.print(`│ 💹 BOURSE  : ${"LOCKED (TIX API Requise)".padEnd(width - 4)}│`);
     }
     
     const xpLine = `✨ XP RATE : ${formatNumber(data.xpRate)}/s`;

@@ -168,8 +168,27 @@ export async function main(ns) {
                 metrics.jobsFailed++;
                 continue;
             }
-            
-            // ═══════════════════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════
+            // 🔥 v45.5 URGENTFIX : VÉRIFICATION RAM PRE-EXEC
+            // ═════════════════════════════════════════════════════════════
+             const ramPerThread = {
+    'hack': 1.70,
+    'grow': 1.75,
+    'weaken': 1.75,
+    'share': 4.00
+            };
+
+            const ramNeeded = (job.threads || 1) * (ramPerThread[job.type] || 2.0);
+            const serverInfo = ns.getServer(job.host);
+            const ramFree = serverInfo.maxRam - serverInfo.ramUsed;
+
+            if (ramFree < ramNeeded) {
+             if (log.debugEnabled) {
+             log.debug(`⏭️ Skip ${job.type} sur ${job.host}: RAM insuffisante (${ns.formatRam(ramFree)} < ${ns.formatRam(ramNeeded)})`);
+            }
+            continue; // Skip ce job
+            }
+            // ═════════════════════════════════════════════════════════════
             // 🚀 EXÉCUTION DU JOB
             // ═══════════════════════════════════════════════════════════════════════
             
