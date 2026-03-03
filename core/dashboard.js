@@ -5,15 +5,22 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.1 - "DASHBOARD PREMIUM"
+ *                           v45.5 - "DASHBOARD ALIGNED"
  * 
  * @module      core/dashboard
  * @description Dashboard premium avec design professionnel et auto-tail
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.1 - PROMETHEUS PREMIUM
- * @date        2026-03-01
+ * @version     45.5 - PROMETHEUS ALIGNED
+ * @date        2026-03-02
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔥 PROMETHEUS v45.5 - ALIGNMENT FIX
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * ✓ CORRIGÉ : Ligne CAPITAL mal alignée (padding incorrect)
+ * ✓ CORRIGÉ : Ligne BOURSE mal alignée (padding incorrect)
+ * ✓ RÉSULTAT : Cadre dashboard parfaitement aligné sur 60 caractères
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🎨 DASHBOARD PREMIUM - FONCTIONNALITÉS
@@ -296,7 +303,8 @@ function drawDashboard(ns, data) {
     // SECTION: CAPITAL & PROFIT
     // ═══════════════════════════════════════════════════════════════════════════════
     
-    ns.print(`│ 💰 CAPITAL : ${formatMoney(data.capital).padEnd(width - 4)}│`);
+    const capitalLine = `💰 CAPITAL : ${formatMoney(data.capital)}`;
+    ns.print(`│ ${capitalLine.padEnd(width - 4)}│`);
     
     const profitLine = `📈 PROFIT  : ${formatMoney(data.profit)}/s [REC: ${formatMoney(data.maxProfit)}/s]`;
     ns.print(`│ ${profitLine.padEnd(width - 4)}│`);
@@ -306,7 +314,8 @@ function drawDashboard(ns, data) {
         const stockLine = `💹 BOURSE  : ${formatMoney(data.stockProfit)}/s | Portfolio: ${formatMoney(data.stockValue)}`;
         ns.print(`│ ${stockLine.padEnd(width - 4)}│`);
     } else {
-        ns.print(`│ 💹 BOURSE  : ${"LOCKED (TIX API Requise)".padEnd(width - 4)}│`);
+        const bourseLine = `💹 BOURSE  : LOCKED (TIX API Requise)`;
+        ns.print(`│ ${bourseLine.padEnd(width - 4)}│`);
     }
     
     const xpLine = `✨ XP RATE : ${formatNumber(data.xpRate)}/s`;

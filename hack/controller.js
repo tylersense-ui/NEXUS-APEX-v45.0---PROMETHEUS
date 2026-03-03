@@ -5,16 +5,34 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.4 - "PATCHED - No Backoff Controller"
+ *                           v45.5 - "STABLE - RAM Check + No Backoff"
  * 
  * @module      hack/controller
  * @description Dispatcher central - Lit les jobs du port 4 et dispatch les workers.
  *              Gère la copie des scripts et l'exécution sur les serveurs cibles.
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.4 - PROMETHEUS PATCHED (No Backoff)
+ * @version     45.5 - PROMETHEUS STABLE
  * @date        2026-03-02
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔥 PROMETHEUS v45.5 - RAM CHECK PRE-EXEC (URGENT FIX)
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * ✓ NOUVEAU : Vérification RAM avant exec (lignes 172-190)
+ * ✓ RÉSULTAT : Skip jobs si RAM insuffisante au moment exec
+ * ✓ IMPACT : Réduit spam logs, évite échecs exec inutiles
+ * 
+ * CHANGEMENTS v45.4 → v45.5 :
+ *   AVANT : Exec direct sans vérifier RAM disponible
+ *   → Job calculé quand RAM libre, mais exec plus tard
+ *   → Entre temps, autres processus utilisent RAM
+ *   → exec échoue, spam logs d'erreur
+ *   
+ *   APRÈS : Vérification RAM juste avant exec
+ *   → Si RAM < ramNeeded, skip proprement
+ *   → Logs debug seulement (pas d'erreur)
+ *   → Système plus propre et stable
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.4 - NO BACKOFF (CRITICAL PATCH)
@@ -80,7 +98,7 @@ export async function main(ns) {
     const log = new Logger(ns, "CONTROLLER");
     const ph = new PortHandler(ns);
     
-    log.info("🎮 Démarrage du Controller PROMETHEUS v45.4...");
+    log.info("🎮 Démarrage du Controller PROMETHEUS v45.5...");
     
     /**
      * Mapping des types de jobs vers les scripts workers
@@ -187,7 +205,7 @@ export async function main(ns) {
              log.debug(`⏭️ Skip ${job.type} sur ${job.host}: RAM insuffisante (${ns.formatRam(ramFree)} < ${ns.formatRam(ramNeeded)})`);
             }
             continue; // Skip ce job
-            }
+      }
             // ═════════════════════════════════════════════════════════════
             // 🚀 EXÉCUTION DU JOB
             // ═══════════════════════════════════════════════════════════════════════

@@ -1,0 +1,348 @@
+/**
+ * ██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗
+ * ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔════╝██║   ██║██╔════╝
+ * ██████╔╝██████╔╝██║   ██║██╔████╔██║█████╗     ██║   ███████║█████╗  ██║   ██║███████╗
+ * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
+ * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
+ * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
+ * v45.2 - "DASHBOARD PREMIUM"
+ * * @module      core/dashboard
+ * @description Dashboard premium avec design professionnel et auto-tail (Modern API)
+ */
+
+import { CONFIG } from "/lib/constants.js";
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🎨 DASHBOARD PREMIUM - MAIN FUNCTION
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+export async function main(ns) {
+    ns.disableLog("ALL");
+    ns.clearLog();
+    
+    const state = {
+        startTime: Date.now(),
+        maxProfit: 0,
+        lastProfit: 0,
+        profitSamples: [],
+        lastUpdate: 0
+    };
+    
+    const apis = detectAPIs(ns);
+    const REFRESH_RATE = CONFIG.SYSTEM?.REFRESH_RATE || 1000;
+    
+    while (true) {
+        ns.clearLog();
+        const data = collectData(ns, state, apis);
+        drawDashboard(ns, data);
+        await ns.sleep(REFRESH_RATE);
+    }
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🔍 DÉTECTION DES APIS DISPONIBLES
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+function detectAPIs(ns) {
+    const apis = { formulas: false, tix: false, singularity: false, gang: false, hacknet: false };
+    try { if (ns.fileExists("Formulas.exe", "home")) apis.formulas = true; } catch (e) {}
+    try { ns.stock.getSymbols(); apis.tix = true; } catch (e) {}
+    try { ns.singularity.getCurrentWork(); apis.singularity = true; } catch (e) {}
+    try { if (ns.gang.getGangInformation()) apis.gang = true; } catch (e) {}
+    try { if (ns.hacknet.numNodes() > 0) apis.hacknet = true; } catch (e) {}
+    return apis;
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 📊 COLLECTE DES DONNÉES
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+function collectData(ns, state, apis) {
+    const data = {};
+    const player = ns.getPlayer();
+    data.level = player.skills.hacking;
+    
+    try {
+        const resetInfo = ns.getResetInfo();
+        data.bitnode = `BN ${resetInfo.currentNode}.${resetInfo.ownedSF.get(resetInfo.currentNode) || 1}`;
+    } catch (e) {
+        data.bitnode = "BN ?.?";
+    }
+    
+    data.capital = player.money;
+    const now = Date.now();
+    
+    if (state.lastUpdate > 0) {
+        const deltaTime = (now - state.lastUpdate) / 1000;
+        const deltaMoney = player.money - state.lastProfit;
+        data.profit = Math.max(0, deltaMoney / deltaTime);
+        if (data.profit > state.maxProfit) state.maxProfit = data.profit;
+    } else {
+        data.profit = 0;
+    }
+    
+    data.maxProfit = state.maxProfit;
+    state.lastProfit = player.money;
+    state.lastUpdate = now;
+    
+    if (apis.tix) {
+        data.stockProfit = calculateStockProfit(ns);
+        data.stockValue = calculateStockValue(ns);
+    }
+    
+    data.xpRate = 0; // Calcul approximatif omis pour perf
+    
+    const allServers = scanAll(ns);
+    data.serversTotal = allServers.length;
+    data.serversRooted = allServers.filter(s => ns.hasRootAccess(s)).length;
+    
+    const nodePrefix = CONFIG.MANAGERS?.PSERV_PREFIX || "nexus-node-";
+    const nodes = allServers.filter(s => s.startsWith(nodePrefix));
+    data.nodesOnline = nodes.filter(s => ns.serverExists(s)).length;
+    data.nodesTotal = 25;
+    
+    let totalRam = 0;
+    let usedRam = 0;
+    
+    // PATCH : Utilisation de ns.getServer() au lieu des fonctions obsolètes
+    for (const hostname of allServers) {
+        if (ns.hasRootAccess(hostname)) {
+            const server = ns.getServer(hostname);
+            totalRam += server.maxRam;
+            usedRam += server.ramUsed;
+        }
+    }
+    
+    data.totalRam = totalRam;
+    data.usedRam = usedRam;
+    data.ramPercent = totalRam > 0 ? (usedRam / totalRam) : 0;
+    
+    const threads = countThreads(ns, allServers);
+    data.threadsHack = threads.hack;
+    data.threadsGrow = threads.grow;
+    data.threadsWeaken = threads.weaken;
+    data.threadsShare = threads.share;
+    data.threadsTotal = threads.total;
+    
+    data.targets = getTopTargets(ns, 3);
+    
+    if (apis.singularity) data.currentAction = getCurrentAction(ns);
+    if (apis.gang) data.gangInfo = getGangInfo(ns);
+    if (apis.hacknet) data.hacknetInfo = getHacknetInfo(ns);
+    
+    data.uptime = formatTime(now - state.startTime);
+    data.currentTime = new Date().toLocaleTimeString("fr-FR");
+    
+    return data;
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🎨 DESSINER LE DASHBOARD
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+function drawDashboard(ns, data) {
+    const width = 60;
+    
+    const headerContent = `NEXUS-APEX ─ ${data.currentTime} ─ LVL ${data.level} (${data.bitnode})`;
+    const padding = Math.max(0, width - 4 - headerContent.length);
+    ns.print(`┌── ${headerContent}${" ".repeat(padding)}┐`);
+    
+    ns.print(`│ 💰 CAPITAL : ${formatMoney(data.capital).padEnd(width - 4)}│`);
+    ns.print(`│ ${`📈 PROFIT  : ${formatMoney(data.profit)}/s [REC: ${formatMoney(data.maxProfit)}/s]`.padEnd(width - 4)}│`);
+    
+    if (data.stockProfit !== undefined) {
+        ns.print(`│ ${`💹 BOURSE  : ${formatMoney(data.stockProfit)}/s | Portfolio: ${formatMoney(data.stockValue)}`.padEnd(width - 4)}│`);
+    } else {
+        ns.print(`│ 💹 BOURSE  : ${"LOCKED (TIX API Requise)".padEnd(width - 4)}│`);
+    }
+    
+    ns.print(`│ ${`✨ XP RATE : ${formatNumber(data.xpRate)}/s`.padEnd(width - 4)}│`);
+    ns.print(`├${"─".repeat(width - 2)}┤`);
+    
+    ns.print(`│ ${`🌐 NODES   : ${data.nodesOnline} / ${data.nodesTotal} Online`.padEnd(width - 4)}│`);
+    ns.print(`│ ${`💾 NETWORK : ${ns.formatRam(data.usedRam)} / ${ns.formatRam(data.totalRam)} (${(data.ramPercent * 100).toFixed(1)}%)`.padEnd(width - 4)}│`);
+    
+    const barWidth = width - 6;
+    const filledWidth = Math.round(barWidth * data.ramPercent);
+    ns.print(`│ ${`[${"█".repeat(filledWidth)}${"░".repeat(barWidth - filledWidth)}]`.padEnd(width - 4)}│`);
+    
+    ns.print(`│ ${`⚙️ THREADS : 💸H:${formatNumber(data.threadsHack, true)}  💪G:${formatNumber(data.threadsGrow, true)}  🛡️W:${formatNumber(data.threadsWeaken, true)}`.padEnd(width - 4)}│`);
+    
+    if (data.threadsShare > 0) {
+        const repBoost = 1 + (data.threadsShare * 0.001);
+        ns.print(`│ ${`✨ REP     : x${repBoost.toFixed(3)} (${formatNumber(data.threadsShare, true)} threads)`.padEnd(width - 4)}│`);
+    }
+    
+    if (data.targets && data.targets.length > 0) {
+        const secPad = Math.floor((width - 2 - 13) / 2);
+        ns.print(`├${"─".repeat(secPad)} TARGET STATUS ${"─".repeat(width - 2 - secPad - 13)}┤`);
+        
+        for (const target of data.targets) {
+            const icon = target.status === "ready" ? "💸" : "🛡️";
+            const name = target.name.substring(0, 10).toUpperCase().padEnd(10);
+            const targetLine = `${icon} ${name} | M:${(target.moneyPercent * 100).toFixed(0).padStart(3)}% S:${(target.securityDiff >= 0 ? "+" : "") + target.securityDiff.toFixed(1).padStart(4)} | ETA: ${target.eta.padStart(3)}`;
+            ns.print(`│ ${targetLine.padEnd(width - 4)}│`);
+        }
+    }
+    
+    if (data.currentAction || data.gangInfo || data.hacknetInfo) {
+        const secPad = Math.floor((width - 2 - 11) / 2);
+        ns.print(`├${"─".repeat(secPad)} SUB-SYSTEMS ${"─".repeat(width - 2 - secPad - 11)}┤`);
+        
+        if (data.currentAction) ns.print(`│ ${`🎯 ACTION  : ${data.currentAction}`.padEnd(width - 4)}│`);
+        if (data.gangInfo) ns.print(`│ ${`🔪 GANG    : ${formatMoney(data.gangInfo.moneyPerSec)}/s | Respect: ${formatNumber(data.gangInfo.respectPerSec)}/s`.padEnd(width - 4)}│`);
+        if (data.hacknetInfo) ns.print(`│ ${`🖥️ HACKNET : ${data.hacknetInfo.numNodes} Nodes | Hash: ${formatNumber(data.hacknetInfo.hashRate)}/s`.padEnd(width - 4)}│`);
+    }
+    
+    ns.print(`├${"─".repeat(width - 2)}┤`);
+    ns.print(`│ ${`⏳ UPTIME : ${data.uptime}`.padEnd(width - 4)}│`);
+    ns.print(`└${"─".repeat(width - 2)}┘`);
+}
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 🛠️ FONCTIONS UTILITAIRES
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+function scanAll(ns) {
+    const visited = new Set();
+    const queue = ["home"];
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (visited.has(current)) continue;
+        visited.add(current);
+        for (const neighbor of ns.scan(current)) if (!visited.has(neighbor)) queue.push(neighbor);
+    }
+    return Array.from(visited);
+}
+
+function countThreads(ns, servers) {
+    const threads = { hack: 0, grow: 0, weaken: 0, share: 0, total: 0 };
+    for (const server of servers) {
+        for (const proc of ns.ps(server)) {
+            const file = proc.filename.toLowerCase();
+            if (file.includes("hack.js")) threads.hack += proc.threads;
+            else if (file.includes("grow.js")) threads.grow += proc.threads;
+            else if (file.includes("weaken.js")) threads.weaken += proc.threads;
+            else if (file.includes("share.js")) threads.share += proc.threads;
+            threads.total += proc.threads;
+        }
+    }
+    return threads;
+}
+
+function getTopTargets(ns, count = 3) {
+    const allServers = scanAll(ns);
+    const targets = [];
+    
+    for (const hostname of allServers) {
+        if (hostname === "home" || hostname.startsWith("nexus-node-") || hostname.startsWith("pserv-")) continue;
+        if (!ns.hasRootAccess(hostname)) continue;
+        
+        // PATCH : Modernisation de l'API Serveur
+        const server = ns.getServer(hostname);
+        const player = ns.getPlayer();
+        
+        if (server.moneyMax === 0 || server.requiredHackingSkill > player.skills.hacking) continue;
+        
+        const moneyPercent = server.moneyMax > 0 ? server.moneyAvailable / server.moneyMax : 0;
+        const secDiff = server.hackDifficulty - server.minDifficulty;
+        const status = (moneyPercent >= 0.95 && secDiff <= 1) ? "ready" : "prep";
+        
+        let eta = "Rdy";
+        if (status === "prep") eta = `${Math.ceil(5 + (secDiff * 0.5))}m`;
+        
+        targets.push({
+            name: hostname,
+            maxMoney: server.moneyMax,
+            moneyPercent: moneyPercent,
+            securityDiff: secDiff,
+            status: status,
+            eta: eta
+        });
+    }
+    
+    return targets.sort((a, b) => b.maxMoney - a.maxMoney).slice(0, count);
+}
+
+function getCurrentAction(ns) {
+    try {
+        const work = ns.singularity.getCurrentWork();
+        if (!work) return "🏠 Idle";
+        if (work.type === "COMPANY") return `💼 ${work.companyName}`;
+        if (work.type === "FACTION") return `🎖️ ${work.factionName} (${work.factionWorkType})`;
+        if (work.type === "CLASS") return `🎓 University (${work.classType.replace("_", " ")})`;
+        if (work.type === "CRIME") return `🔫 Crime (${work.crimeType})`;
+        if (work.type === "GRAFTING") return `🧬 Grafting (${work.augmentation})`;
+        return `⚙️ ${work.type}`;
+    } catch (e) { return null; }
+}
+
+function getGangInfo(ns) {
+    try {
+        const g = ns.gang.getGangInformation();
+        return { moneyPerSec: g.moneyGainRate * 5, respectPerSec: g.respect };
+    } catch (e) { return null; }
+}
+
+function getHacknetInfo(ns) {
+    try {
+        const nodes = ns.hacknet.numNodes();
+        if (nodes === 0) return null;
+        let hashRate = 0;
+        for (let i = 0; i < nodes; i++) hashRate += ns.hacknet.getNodeStats(i).production;
+        return { numNodes: nodes, hashRate: hashRate };
+    } catch (e) { return null; }
+}
+
+function calculateStockProfit(ns) {
+    try {
+        let total = 0;
+        for (const sym of ns.stock.getSymbols()) {
+            const pos = ns.stock.getPosition(sym);
+            if (pos[0] > 0) total += (ns.stock.getPrice(sym) - pos[1]) * pos[0];
+        }
+        return total / 3600;
+    } catch (e) { return 0; }
+}
+
+function calculateStockValue(ns) {
+    try {
+        let val = 0;
+        for (const sym of ns.stock.getSymbols()) {
+            const pos = ns.stock.getPosition(sym);
+            if (pos[0] > 0) val += pos[0] * ns.stock.getPrice(sym);
+        }
+        return val;
+    } catch (e) { return 0; }
+}
+
+function formatMoney(amount) {
+    if (amount >= 1e15) return `$${(amount / 1e15).toFixed(3)}q`;
+    if (amount >= 1e12) return `$${(amount / 1e12).toFixed(3)}t`;
+    if (amount >= 1e9) return `$${(amount / 1e9).toFixed(3)}b`;
+    if (amount >= 1e6) return `$${(amount / 1e6).toFixed(3)}m`;
+    if (amount >= 1e3) return `$${(amount / 1e3).toFixed(3)}k`;
+    return `$${amount.toFixed(0)}`;
+}
+
+function formatNumber(num, compact = false) {
+    if (compact) {
+        if (num >= 1e6) return `${(num / 1e6).toFixed(1)}m`;
+        if (num >= 1e3) return `${(num / 1e3).toFixed(1)}k`;
+        return num.toFixed(0);
+    }
+    if (num >= 1e9) return `${(num / 1e9).toFixed(3)}b`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(3)}m`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(3)}k`;
+    return num.toFixed(0);
+}
+
+function formatTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m ${s % 60}s`;
+}
