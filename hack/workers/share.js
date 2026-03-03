@@ -5,73 +5,56 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.0 - "Stealing Fire From The Gods"
+ *                           v45.6 - "ULTIMATE - DRAIN & SALT PATCH"
  * 
  * @module      hack/workers/share
- * @description Worker de share - Partage la puissance de calcul avec des factions.
- *              Augmente le pouvoir de faction et donne des bonus passifs.
- * @author      Claude (Anthropic) + tylersense-ui
- * @version     45.0 - PROMETHEUS
- * @date        2025-01-XX
- * @license     MIT
- * @requires    BitBurner v2.8.1+ (Steam)
+ * @description Worker de share avec UUID salt support et logging détaillé
+ * @version     45.6 - PROMETHEUS ULTIMATE
  * @ram         4.00 GB (pour 1 thread)
- * 
- * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS ENHANCEMENTS
- * ═══════════════════════════════════════════════════════════════════════════════════
- * ✓ Validation du délai optionnel
- * ✓ Try/catch robuste autour de ns.share()
- * ✓ Gestion d'erreur avec logging détaillé
- * ✓ Logs avec icônes (🤝✅❌⏱️)
- * ✓ Support du délai avant démarrage
- * ✓ Boucle infinie automatique (share est bloquant)
- * ✓ Protection contre arguments invalides
- * ═══════════════════════════════════════════════════════════════════════════════════
- * 
- * @usage
- *   ns.exec("/hack/workers/share.js", "host", threads, delay);
- * 
- * @arguments
- *   delay (number) - Délai en ms avant de démarrer (défaut: 0)
- * 
- * @example
- *   // Share immédiat (boucle infinie)
- *   ns.exec("/hack/workers/share.js", "pserv-0", 100, 0);
- * 
- * @example
- *   // Share avec délai
- *   ns.exec("/hack/workers/share.js", "pserv-0", 50, 5000);
- *   // Attend 5 secondes avant de commencer à partager
- * 
- * @returns
- *   Ne retourne jamais (boucle infinie bloquante)
  */
 
-/**
- * ═══════════════════════════════════════════════════════════════════════════════════
- * 🎯 WORKER SHARE - MAIN FUNCTION
- * ═══════════════════════════════════════════════════════════════════════════════════
- * Exécute une opération de share en boucle infinie après un délai optionnel.
- * 
- * Le share partage la puissance de calcul avec des factions.
- * Augmente le pouvoir de faction et donne des bonus passifs (reputation, etc.).
- * 
- * IMPORTANT : ns.share() est une fonction BLOQUANTE qui ne se termine jamais.
- * Elle doit être utilisée dans un script dédié qui tourne en continu.
- * 
- * @param {NS} ns - Namespace BitBurner
- */
 /** @param {NS} ns */
 export async function main(ns) {
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 📥 VALIDATION DES ARGUMENTS
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
     let delay = ns.args[0] || 0;
-    if (typeof delay !== 'number' || delay < 0) delay = 0;
+    if (typeof delay !== 'number' || delay < 0) {
+        ns.print(`⚠️  SHARE WARNING: Délai invalide (${delay}), utilisation de 0ms`);
+        delay = 0;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 🔥 CORRECTIF BUG 3 : ACCEPTATION DE L'UUID (SALT)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // L'UUID empêche les collisions lors du job splitting
+    // NOTE: Pour share, UUID est en args[1] (pas de target)
+    const uuid = ns.args[1] || "000";
 
-    if (delay > 0) await ns.sleep(delay);
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // ⏱️ DÉLAI AVANT DÉMARRAGE
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
+    if (delay > 0) {
+        ns.print(`⏱️  SHARE: Attente de ${delay}ms avant démarrage...`);
+        await ns.sleep(delay);
+    }
 
+    // ═══════════════════════════════════════════════════════════════════════════════
+    // 🤝 EXÉCUTION DU SHARE (BOUCLE INFINIE)
+    // ═══════════════════════════════════════════════════════════════════════════════
+    
     try {
+        ns.print(`✅ SHARE: Démarrage du partage de puissance (UUID: ${uuid.substring(0, 8)}...)`);
+        ns.print(`🤝 SHARE: Boucle infinie activée - Contribution aux factions`);
+        
+        // ns.share() est bloquant et ne se termine jamais
         await ns.share();
+        
     } catch (error) {
-        ns.print(`❌ SHARE: ${error.message}`);
+        ns.print(`❌ SHARE ERROR: ${error.message}`);
+        ns.print(`   → Delay: ${delay}ms`);
+        ns.print(`   → UUID: ${uuid.substring(0, 8)}...`);
     }
 }
