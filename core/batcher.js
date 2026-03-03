@@ -5,7 +5,7 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                            v45.5 - "PATCHED - Prep Timing Synchronized" 
+ *                            v45.7 - "CRITICAL FIX - Prep Loop Detection" 
  * @module      core/batcher
  * @description LE CŒUR DE PROMETHEUS - Calcule et dispatch les batchs HWGW optimaux.
  *              Implémente EV/s dynamic hackPercent, FFD packing avec JOB SPLITTING.
@@ -163,7 +163,7 @@ export class Batcher {
                 this._metrics.batchesCreated++;
                 this._metrics.prepBatchesCreated++;
                 
-                return { success: dispatched > 0, jobs: packedJobs, threadsUsed: dispatched };
+                return { success: dispatched > 0, isPrep: true, jobs: packedJobs, threadsUsed: dispatched };
             }
 
             // Serveur prêt → Continuer avec batch HWGW normal
@@ -209,6 +209,7 @@ export class Batcher {
             
             return {
                 success: dispatched > 0,
+                isPrep: false,
                 jobs: packedJobs,
                 threadsUsed: dispatched
             };

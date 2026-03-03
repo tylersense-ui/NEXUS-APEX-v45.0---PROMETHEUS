@@ -5,7 +5,7 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.0 - "Stealing Fire From The Gods"
+ *                           v45.7 - "CRITICAL FIX - Prep Loop"
  * 
  * @module      core/orchestrator
  * @description Coordinateur général du système PROMETHEUS - Initialise et orchestre
@@ -74,7 +74,7 @@ export async function main(ns) {
     ns.tprint("    ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║");
     ns.tprint("    ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║");
     ns.tprint("    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝");
-    ns.tprint("                              v45.0 - \"Stealing Fire From The Gods\"");
+    ns.tprint("                              v45.7 - \"Stealing Fire From The Gods\"");
     ns.tprint("\x1b[0m");
     ns.tprint("");
     ns.tprint("🔥 Initialisation du système PROMETHEUS...");
@@ -270,7 +270,7 @@ export async function main(ns) {
                 for (const target of targets) {
                 let batchCount = 0;
                 let totalThreads = 0;
-                const MAX_BATCHES_PER_TARGET = 100;
+                const MAX_BATCHES_PER_TARGET = 1;
     
                 while (batchCount < MAX_BATCHES_PER_TARGET) {
                 try {
@@ -299,6 +299,15 @@ export async function main(ns) {
                 
                 if (log.debugEnabled) {
                     log.debug(`✅ Batch #${batchCount} ${target}: ${result.threadsUsed} threads`);
+                }
+                
+                // 🆕 v45.7 : STOP après batch de préparation
+                // Si le batch dispatché était un batch de PRÉPARATION (et non HWGW),
+                // on sort de la boucle pour éviter d'empiler 100 batchs identiques.
+                // Le serveur doit d'abord terminer la préparation avant next batches.
+                if (result.isPrep) {
+                    log.info(`🔧 Préparation de ${target} en cours - attente convergence`);
+                    break;
                 }
                 } else {
                 if (batchCount === 0) {
