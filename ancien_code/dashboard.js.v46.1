@@ -5,35 +5,31 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v46.2 - "GODMODE - STABLE"
+ *                           v46.1 - "GODMODE - SYNTAX FIX"
  * 
  * @module      core/dashboard
  * @description Dashboard premium avec design professionnel et auto-tail
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     46.2 - GODMODE (Fully Debugged & Validated)
+ * @version     46.1 - GODMODE (Syntax Error Fix)
  * @date        2026-03-03
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS v46.2 - GODMODE (VALIDATION PROFESSIONNELLE)
+ * 🔥 PROMETHEUS v46.1 - GODMODE (SYNTAX ERROR FIX)
  * ═══════════════════════════════════════════════════════════════════════════════════
- * ✓ CORRIGÉ v46.2 : Variable 'uptimeLine' non définie ligne 421 (ReferenceError)
- * ✓ SOLUTION : Remplacer par 'playtimeLine1' et 'playtimeLine2' (définies lignes 419-420)
- * ✓ AJOUTÉ : Ligne manquante pour afficher playtimeLine2
- * ✓ RÉSULTAT : Dashboard s'affiche correctement avec temps de jeu
- * 
  * ✓ CORRIGÉ v46.1 : Double déclaration 'player' ligne 271 (SyntaxError)
- * ✓ SOLUTION : Variable 'player' déclarée ligne 154 reste en scope jusqu'à fin de fonction
- * ✓ RÉSULTAT : Pas de redéclaration nécessaire
+ * ✓ SOLUTION : Variable 'player' déjà déclarée ligne 154, réutilisation au lieu de redéclaration
+ * ✓ RÉSULTAT : Dashboard s'exécute sans erreur de syntaxe
  * 
- * CHANGELOG v45.8 → v46.2 :
- *   BUG #1 (v46.1): const player = ns.getPlayer(); // ligne 271 ❌ Double déclaration
- *   FIX #1 (v46.1): Suppression ligne 271, réutilisation déclaration ligne 154 ✅
+ * CHANGELOG v45.8 → v46.1 :
+ *   AVANT : const player = ns.getPlayer(); // ligne 154
+ *           ...
+ *           const player = ns.getPlayer(); // ligne 271 ❌ ERREUR
  *   
- *   BUG #2 (v46.2): ns.print(`│ ${uptimeLine.padEnd(...)}│`); // ligne 421 ❌ Variable non définie
- *   FIX #2 (v46.2): ns.print(`│ ${playtimeLine1.padEnd(...)}│`); // ✅ Variable définie ligne 419
- *                   ns.print(`│ ${playtimeLine2.padEnd(...)}│`); // ✅ Ligne ajoutée (était manquante)
+ *   APRÈS : const player = ns.getPlayer(); // ligne 154
+ *           ...
+ *           // player déjà déclaré ligne 154, réutilisation ✅
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
  * 🔥 PROMETHEUS v45.5 - ALIGNMENT FIX (Historique)
@@ -438,8 +434,7 @@ function drawDashboard(ns, data) {
     // v45.8: Afficher temps de jeu (2 lignes)
     const playtimeLine1 = `⏳ PLAY   : ${data.playtimeSinceAug} (since aug)`;
     const playtimeLine2 = `         : ${data.totalPlaytime} (total)`;
-    ns.print(`│ ${playtimeLine1.padEnd(width - 4)}│`);
-    ns.print(`│ ${playtimeLine2.padEnd(width - 4)}│`);
+    ns.print(`│ ${uptimeLine.padEnd(width - 4)}│`);
     
     ns.print(`└${"─".repeat(width - 2)}┘`);
 }
