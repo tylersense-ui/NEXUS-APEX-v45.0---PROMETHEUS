@@ -1,0 +1,13 @@
+BN1 – Source Genesis            [SF1]   ❌Gang ❌Singularity ❌Bladeburner ❌V6
+BN2 – High Growth               [SF2]   ✅Gang ✅Singularity ❌Bladeburner ✅V6
+BN3 – Corporatocracy            [SF3]   ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN4 – Singularity               [SF4]   ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN5 – Artificial Intelligence   [SF5]   ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN6 – Ascension/Challenge       [SF6]   ✅Gang ✅Singularity ✅Bladeburner ✅V6
+BN7 – Company/Faction Focus     [SF7]   ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN8 – Bladeburner/Gang Mix      [SF8]   ✅Gang ✅Singularity ✅Bladeburner ✅V6
+BN9 – The Devil’s Playground    [SF9]   ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN10 – The Singularity Node     [SF10]  ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN11 – Corporate Ascension      [SF11]  ❌Gang ✅Singularity ❌Bladeburner ❌V6
+BN12 – The Recursion            [SF12]  ✅Gang ✅Singularity ✅Bladeburner ✅V6
+BN13 – Gang/Territory Warfare   [SF13]  ✅Gang ✅Singularity ❌Bladeburner ✅V6

@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════
+🚨 CORRECTION D'URGENCE - BATCHER v45.9 FIXED
+═══════════════════════════════════════════════════════════════
+
+PROBLÈME DÉTECTÉ:
+  ❌ Erreur: this.ramMgr.getAvailableHosts is not a function
+  
+CAUSE:
+  La méthode getAvailableHosts() n'existe pas dans RamManager.
+  Le RamManager utilise getRamPools() qui retourne un objet
+  avec une propriété "servers".
+
+CORRECTION APPLIQUÉE (ligne 591-593):
+  
+  AVANT:
+  const hostRAM = this.ramMgr.getAvailableHosts();
+  
+  APRÈS:
+  const ramPools = this.ramMgr.getRamPools();
+  const hostRAM = ramPools.servers || [];
+
+COMPATIBILITÉ:
+  ✅ getRamPools().servers retourne un tableau d'objets avec:
+     - hostname
+     - maxRam
+     - usedRam
+     - freeRam
+     - utilization
+  
+  ✅ Le code utilise host.hostname et host.freeRam
+  ✅ Totalement compatible avec l'API existante
+
+DÉPLOIEMENT:
+  1. Utiliser batcher.js (CORRIGÉ) au lieu de l'ancien
+  2. Copier dans core/batcher.js
+  3. run global-kill.js
+  4. run boot.js
+  5. Le système devrait démarrer sans erreur
+
+VALIDATION:
+  tail core/orchestrator.js
+  
+  Devrait afficher:
+  ✅ Messages de préparation avec ratio G/W
+  ✅ Pas d'erreur "is not a function"
+  ✅ Batches créés et dispatchés
+
+═══════════════════════════════════════════════════════════════
+ÉTAT: ✅ CORRIGÉ - Prêt pour déploiement
+═══════════════════════════════════════════════════════════════
