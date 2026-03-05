@@ -1,0 +1,166 @@
+/**
+ * 🔧 PATCH PROMETHEUS v47.1 - RAM MANAGER FIX
+ * 
+ * PROBLÈME: batcher v47.0 appelle this.ramMgr.getAllServersRAM() qui n'existe pas
+ * SOLUTION: Utiliser this.ramMgr.getRamPools() à la place
+ * 
+ * FICHIER À PATCHER: core/batcher.js
+ * LIGNES À MODIFIER: ~650 dans la méthode _packJobs()
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * AVANT (v47.0 - BUGUÉ):
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 
+ * _packJobs(jobs) {
+ *     // ... validation ...
+ *     
+ *     // Obtenir RAM disponible sur tous les serveurs
+ *     const hostsRAM = this.ramMgr.getAllServersRAM();  // ❌ N'EXISTE PAS
+ *     
+ *     // Créer une copie mutable pour le packing
+ *     const hostRAMMutable = {};
+ *     for (const [hostname, ram] of Object.entries(hostsRAM)) {
+ *         hostRAMMutable[hostname] = ram;
+ *     }
+ *     // ...
+ * }
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * APRÈS (v47.1 - CORRIGÉ):
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 
+ * _packJobs(jobs) {
+ *     // ... validation ...
+ *     
+ *     // Obtenir RAM disponible sur tous les serveurs
+ *     const ramPools = this.ramMgr.getRamPools();  // ✅ EXISTE
+ *     
+ *     // Créer une copie mutable pour le packing
+ *     const hostRAMMutable = {};
+ *     for (const server of ramPools.servers) {
+ *         hostRAMMutable[server.hostname] = server.freeRam;
+ *     }
+ *     // ...
+ * }
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * INSTRUCTIONS:
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. Ouvrir core/batcher.js
+ * 
+ * 2. Chercher la méthode _packJobs() (ligne ~650)
+ * 
+ * 3. Remplacer ces lignes:
+ * 
+ *    const hostsRAM = this.ramMgr.getAllServersRAM();
+ *    
+ *    const hostRAMMutable = {};
+ *    for (const [hostname, ram] of Object.entries(hostsRAM)) {
+ *        hostRAMMutable[hostname] = ram;
+ *    }
+ * 
+ * 4. Par:
+ * 
+ *    const ramPools = this.ramMgr.getRamPools();
+ *    
+ *    const hostRAMMutable = {};
+ *    for (const server of ramPools.servers) {
+ *        hostRAMMutable[server.hostname] = server.freeRam;
+ *    }
+ * 
+ * 5. Sauvegarder et redémarrer
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ */
+
+// MÉTHODE _packJobs() COMPLÈTE CORRIGÉE (v47.1)
+// Copier-coller cette méthode ENTIÈRE dans core/batcher.js pour remplacer l'ancienne
+
+_packJobs(jobs) {
+    // ✅ v46.0 BUG #6 CORRIGÉ : Assertion stricte au lieu de filter
+    jobs.forEach((job, idx) => {
+        if (job.threads <= 0) {
+            throw new Error(`BUG CRITIQUE: Job ${idx} (${job.type}) a ${job.threads} threads`);
+        }
+        if (job.ramPerThread <= 0) {
+            throw new Error(`BUG CRITIQUE: Job ${idx} (${job.type}) a ${job.ramPerThread} RAM/thread`);
+        }
+    });
+    
+    // ✅ v47.1 FIX : Utiliser getRamPools() au lieu de getAllServersRAM()
+    const ramPools = this.ramMgr.getRamPools();
+    
+    // Créer une copie mutable pour le packing
+    const hostRAMMutable = {};
+    for (const server of ramPools.servers) {
+        hostRAMMutable[server.hostname] = server.freeRam;
+    }
+    
+    // Trier jobs par RAM décroissante (FFD algorithm)
+    const sortedJobs = [...jobs].sort((a, b) => {
+        const ramA = a.threads * a.ramPerThread;
+        const ramB = b.threads * b.ramPerThread;
+        return ramB - ramA;  // Décroissant
+    });
+    
+    const packedJobs = [];
+    
+    for (const job of sortedJobs) {
+        const jobRAM = job.threads * job.ramPerThread;
+        let remainingThreads = job.threads;
+        
+        // ✅ v46.0 OPT #6 : Job Splitting
+        // Si job trop gros pour un seul serveur, découper en sub-jobs
+        while (remainingThreads > 0) {
+            // Trouver serveur avec le plus de RAM disponible
+            let bestHost = null;
+            let maxRAM = 0;
+            
+            for (const [hostname, ram] of Object.entries(hostRAMMutable)) {
+                if (ram > maxRAM) {
+                    maxRAM = ram;
+                    bestHost = hostname;
+                }
+            }
+            
+            if (!bestHost || maxRAM < job.ramPerThread) {
+                // Plus assez de RAM nulle part
+                this.log.warn(`Impossible de placer ${remainingThreads} threads ${job.type} (RAM insuffisante)`);
+                this._metrics.totalRamWaste += remainingThreads * job.ramPerThread;
+                break;
+            }
+            
+            // Calculer combien de threads on peut placer
+            const threadsToPlace = Math.min(
+                remainingThreads,
+                Math.floor(maxRAM / job.ramPerThread)
+            );
+            
+            if (threadsToPlace === 0) {
+                // Même pas 1 thread (ne devrait jamais arriver avec la vérif ci-dessus)
+                break;
+            }
+            
+            // Créer sub-job
+            packedJobs.push({
+                ...job,
+                threads: threadsToPlace,
+                host: bestHost,
+                uuid: `${job.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+            });
+            
+            // Mettre à jour RAM disponible
+            hostRAMMutable[bestHost] -= threadsToPlace * job.ramPerThread;
+            remainingThreads -= threadsToPlace;
+            
+            // Métriques job splitting
+            if (remainingThreads > 0) {
+                this._metrics.jobsSplit++;
+                this._metrics.totalSubjobs++;
+            }
+        }
+    }
+    
+    return packedJobs;
+}
