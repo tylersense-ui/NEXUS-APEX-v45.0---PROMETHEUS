@@ -5,56 +5,23 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                            v47.4 - "PREP 0% MONEY FIX" 
+ *                            v47.3 - "GROW THREADS FIX" 
  * 
  * @module      core/batcher
  * @description LE CŒUR DE PROMETHEUS - Calcule et dispatch les batchs HWGW optimaux.
  *              Implémente EV/s dynamic hackPercent, FFD packing, JOB SPLITTING.
  * @author      Claude (Anthropic) + tylersense-ui
- * @version     47.4 - PREP 0% MONEY FIX (Hotfix Critique)
+ * @version     47.3 - GROW THREADS FIX (Hotfix)
  * @date        2026-03-05
  * @license     MIT
  * @requires    BitBurner v2.8.1+ (Steam)
  * 
  * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS v47.4 - PREP 0% MONEY FIX (HOTFIX CRITIQUE)
+ * 🔥 PROMETHEUS v47.3 - GROW THREADS FIX (HOTFIX CRITIQUE)
  * ═══════════════════════════════════════════════════════════════════════════════════
- * ✅ CORRIGÉ #15 : Prep boucle infiniment quand cible à 0% money
- * ✅ SOLUTION : Forcer target minimum 5% si currentPercent < 1%
- * ✅ RÉSULTAT : Cibles à 0% se remplissent progressivement (5%→15%→45%→75%)
- * 
- * CHANGELOG v47.3 → v47.4 :
- *   🔴 BUG CRITIQUE : Serveurs stuck à 0% money depuis 8h+
- *   → Symptôme : Prep lancé mais cibles restent à 0% pour toujours
- *   → Cause : currentPercent = 0 → targetPercent = 0 × 3 = 0
- *   → Effet : growThreads vise 0% → ne fait rien → boucle infinie
- *   → Impact : $0-51/s au lieu de $500M-1B/s, RAM 95% gaspillée
- *   
- *   ✅ CORRECTION 1 : CAS 2 prep (ligne ~414)
- *   AVANT : const targetPercent = Math.min(currentPercent * 3, 0.75);
- *   APRÈS : 
- *     if (currentPercent < 0.01) {
- *         targetPercent = 0.05; // Force 5% minimum
- *     } else {
- *         targetPercent = Math.min(currentPercent * 3, 0.75);
- *     }
- *   
- *   ✅ CORRECTION 2 : CAS 3 prep (ligne ~490)
- *   Même fix appliqué
- *   
- *   ✅ PROTECTION : Division par 0
- *   AVANT : growthNeeded = targetPercent / currentPercent;
- *   APRÈS : growthNeeded = targetPercent / Math.max(currentPercent, 0.001);
- *   
- *   Impact : Cibles à 0% sortent enfin de la boucle
- *   Timeline attendue : 0% → 5% (2min) → 15% (2min) → 45% (2min) → 75% (2min)
- *   Résultat : HWGW démarre après ~10 min au lieu de jamais
- * 
- * ═══════════════════════════════════════════════════════════════════════════════════
- * 🔥 PROMETHEUS v47.3 - GROW THREADS FIX (HISTORIQUE)
- * ═══════════════════════════════════════════════════════════════════════════════════
- * ✅ CORRIGÉ #14 : growThreads = 0 → Batches incomplets
- * ✅ RÉSULTAT : Batches HWGW toujours complets (4 jobs)
+ * ✅ CORRIGÉ #14 : growThreads = 0 quand serveur à 100% avant hack
+ * ✅ SOLUTION : Forcer growThreads >= 1 si hackThreads > 0 + fallback
+ * ✅ RÉSULTAT : Batches HWGW complets (H+W+G+W), serveurs ne se vident plus
  * 
  * CHANGELOG v47.2 → v47.3 :
  *   🔴 BUG CRITIQUE : growThreads calculé à 0 par formulas/approximations
@@ -443,24 +410,10 @@ export class Batcher {
         // CAS 2 : GROW + WEAKEN COMPENSATOIRE (v47.0 BUG #11 CORRIGÉ)
         // ═══════════════════════════════════════════════════════════════
         if (!prepStatus.needsWeaken && prepStatus.needsGrow) {
-            // Calcul grow avec protection 0% money
+            // Calcul grow
             const currentPercent = prepStatus.moneyPercent;
-            
-            // ✅ v47.4 BUG #15 CORRIGÉ : Si 0% money, forcer au moins 5%
-            // Sans ça: 0 * 3 = 0 → boucle infinie
-            const MIN_TARGET_PERCENT = 0.05; // 5% minimum
-            let targetPercent;
-            
-            if (currentPercent < 0.01) {
-                // Serveur quasi-vide → forcer 5% minimum
-                targetPercent = MIN_TARGET_PERCENT;
-                this.log.warn(`⚠️  ${target} à ${(currentPercent*100).toFixed(1)}%, forcing ${(MIN_TARGET_PERCENT*100).toFixed(0)}% target`);
-            } else {
-                // Croissance progressive normale
-                targetPercent = Math.min(currentPercent * MAX_GROWTH_MULT, MONEY_TARGET);
-            }
-            
-            const growthNeeded = targetPercent / Math.max(currentPercent, 0.001); // Éviter division par 0
+            const targetPercent = Math.min(currentPercent * MAX_GROWTH_MULT, MONEY_TARGET);
+            const growthNeeded = targetPercent / currentPercent;
             
             let growThreads = this.ns.growthAnalyze(target, growthNeeded);
             growThreads = Math.ceil(growThreads);
@@ -519,21 +472,10 @@ export class Batcher {
             let weakenThreads = Math.ceil(securityToReduce / 0.05);
             weakenThreads = Math.min(weakenThreads, MAX_THREADS_PER_JOB);
             
-            // GROW avec croissance PROGRESSIVE + protection 0%
+            // GROW avec croissance PROGRESSIVE
             const currentPercent = prepStatus.moneyPercent;
-            
-            // ✅ v47.4 BUG #15: Même fix que CAS 2
-            const MIN_TARGET_PERCENT = 0.05;
-            let targetPercent;
-            
-            if (currentPercent < 0.01) {
-                targetPercent = MIN_TARGET_PERCENT;
-                this.log.warn(`⚠️  ${target} à ${(currentPercent*100).toFixed(1)}%, forcing ${(MIN_TARGET_PERCENT*100).toFixed(0)}% target`);
-            } else {
-                targetPercent = Math.min(currentPercent * MAX_GROWTH_MULT, MONEY_TARGET);
-            }
-            
-            const growthNeeded = targetPercent / Math.max(currentPercent, 0.001);
+            const targetPercent = Math.min(currentPercent * MAX_GROWTH_MULT, MONEY_TARGET);
+            const growthNeeded = targetPercent / currentPercent;
             
             let growThreads = this.ns.growthAnalyze(target, growthNeeded);
             growThreads = Math.ceil(growThreads);
@@ -1041,7 +983,7 @@ export class Batcher {
         const metrics = this.getMetrics();
         
         print("═══════════════════════════════════════════════════════════");
-        print("🔥 MÉTRIQUES BATCHER - PROMETHEUS v47.4 PREP 0% FIX");
+        print("🔥 MÉTRIQUES BATCHER - PROMETHEUS v47.3 GROW FIX");
         print("═══════════════════════════════════════════════════════════");
         print(`📊 Batchs créés: ${metrics.batchesCreated}`);
         print(`  - Préparation: ${metrics.prepBatchesCreated || 0}`);
@@ -1072,15 +1014,15 @@ export async function main(ns) {
     ns.tprint("    ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║");
     ns.tprint("    ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║");
     ns.tprint("    ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝");
-    ns.tprint("                              v47.4 - \"PREP 0% MONEY FIX\"");
+    ns.tprint("                              v47.3 - \"GROW THREADS FIX\"");
     ns.tprint("\x1b[0m");
     ns.tprint("");
     
-    ns.tprint("🔥 BATCHER PROMETHEUS v47.4 - PREP 0% MONEY FIX");
-    ns.tprint("✅ CORRIGÉ #15 : Prep boucle infiniment à 0% money");
-    ns.tprint("✅ SOLUTION : Forcer target minimum 5% si < 1%");
-    ns.tprint("✅ RÉSULTAT : Cibles sortent de la boucle (0%→5%→15%→45%→75%)");
-    ns.tprint("✅ TIMELINE : ~10 min prep au lieu de jamais");
+    ns.tprint("🔥 BATCHER PROMETHEUS v47.3 - GROW THREADS FIX");
+    ns.tprint("✅ CORRIGÉ #14 : growThreads = 0 → Batches incomplets");
+    ns.tprint("✅ SOLUTION : Forcer growThreads >= 1 si hackThreads > 0");
+    ns.tprint("✅ RÉSULTAT : Batches HWGW toujours complets (4 jobs)");
+    ns.tprint("✅ IMPACT : Serveurs restent optimaux, profits stables");
     ns.tprint("");
     ns.tprint("Le batcher nécessite Network, RamManager, PortHandler et Capabilities.");
     ns.tprint("Utiliser: import { Batcher } from \"/core/batcher.js\";");
