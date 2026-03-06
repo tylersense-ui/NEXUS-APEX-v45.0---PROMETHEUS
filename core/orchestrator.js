@@ -306,7 +306,7 @@ export async function main(ns) {
                 const freeRAM = ramPools.totalFree;
             
                 // Stop si moins de 10GB libre (viser 95-100% RAM)
-                if (freeRAM < 10) {
+                if (freeRAM < 10) {    // ✅ HARDCORE FIX #3
                 if (batchCount === 0) {
                     log.warn(`⚠️  RAM insuffisante pour ${target} (${freeRAM.toFixed(0)}GB libre)`);
                 }
