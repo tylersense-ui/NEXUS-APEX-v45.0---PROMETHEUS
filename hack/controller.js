@@ -130,11 +130,19 @@ export async function main(ns) {
                 // VALIDATION DU JOB
                 // ═══════════════════════════════════════════════════════════
                 
-                if (!job.type || !job.target || !job.host) {
-                    log.error(`Job invalide: ${JSON.stringify(job)}`);
-                    jobsFailed++;
-                    continue;
+                // ✅ HARDCORE FIX #4: Validation selon type de job
+                if (!job.type || !job.host) {
+                log.error(`Job invalide: ${JSON.stringify(job)}`);
+                jobsFailed++;
+                continue;
                 }
+
+                // Share n'a pas besoin de target
+                if (job.type !== 'share' && !job.target) {
+                log.error(`Job ${job.type} sans target: ${JSON.stringify(job)}`);
+                jobsFailed++;
+                continue;
+            }
                 
                 if (!job.threads || job.threads < 1) {
                     log.warn(`Job ${job.type} avec 0 threads ignoré`);

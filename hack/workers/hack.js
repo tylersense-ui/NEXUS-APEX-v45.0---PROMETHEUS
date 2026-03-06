@@ -5,65 +5,84 @@
  * ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║
  * ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║
  * ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝
- *                           v45.6 - "ULTIMATE - DRAIN & SALT PATCH"
+ *                           v47.3 - "ULTIMATE DEPLOYMENT FIX"
  * 
  * @module      hack/workers/hack
- * @description Worker de hack avec UUID salt support et logging détaillé
- * @version     45.6 - PROMETHEUS ULTIMATE
- * @ram         1.70 GB (pour 1 thread)
+ * @description Worker ultra-minimaliste pour opération HACK avec UUID salt
+ * @author      Claude (Anthropic) + tylersense-ui
+ * @version     47.3 - CRITICAL FIX
+ * @date        2026-03-05
+ * @license     MIT
+ * @requires    BitBurner v2.8.1+
+ * @ram         1.70 GB (1.60 base + 0.10 hack)
+ * 
+ * @changelog
+ * v47.3 - 2026-03-05 - CRITICAL FIX
+ * - 🔥 UUID SALT: Accepte ns.args[2] (UUID unique)
+ * - ✅ Permet job splitting sans collision de processus
+ * - ✅ BitBurner accepte maintenant plusieurs instances identiques
+ * 
+ * v45.0 - 2025-01-XX
+ * - Version initiale PROMETHEUS
+ * - Worker minimaliste pour hack
+ * 
+ * @description
+ * Worker ultra-simple qui:
+ * 1. Récupère target et delay depuis arguments
+ * 2. Attend le moment exact (delay)
+ * 3. Exécute ns.hack()
+ * 4. Retourne le montant volé
+ * 
+ * Le 3ème argument (UUID) est CRITIQUE pour éviter les collisions.
+ * BitBurner refuse de lancer 2× le même script avec les mêmes args.
+ * L'UUID rend chaque processus unique même si target + delay identiques.
+ * 
+ * Philosophie "Dumb Worker":
+ * - Le Controller fait TOUS les calculs
+ * - Le Worker reçoit des ordres absolus
+ * - Aucune logique métier ici
+ * - RAM minimale (1.70 GB)
+ * 
+ * @param {NS} ns - Netscript API
+ * @param {string} ns.args[0] - Target server (ex: "n00dles")
+ * @param {number} ns.args[1] - Delay avant hack en ms (ex: 1500)
+ * @param {string} ns.args[2] - UUID salt pour unicité (ex: "a3f8d9e2-...")
+ * 
+ * @returns {Promise<number>} Montant d'argent volé
+ * 
+ * @example
+ * // Lancé par le Controller
+ * ns.exec("/hack/workers/hack.js", "nexus-node-0", 100, "n00dles", 1500, "uuid-123");
+ * 
+ * @see /hack/controller.js - Dispatcher qui lance ce worker
+ * @see /core/batcher.js - Calcule target et delay
  */
 
-/** @param {NS} ns */
+/**
+ * Point d'entrée principal du worker
+ * @param {NS} ns - Netscript API
+ * @returns {Promise<number>} Montant volé
+ */
 export async function main(ns) {
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // 📥 VALIDATION DES ARGUMENTS
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // RÉCUPÉRATION DES ARGUMENTS
+    // ═══════════════════════════════════════════════════════════════════════════
     
     const target = ns.args[0];
-    if (!target || typeof target !== 'string') {
-        ns.print("❌ HACK ERROR: Target invalide ou manquant");
-        ns.print(`   → Reçu: ${JSON.stringify(target)}`);
-        return 0;
-    }
-
-    let delay = ns.args[1] || 0;
-    if (typeof delay !== 'number' || delay < 0) {
-        ns.print(`⚠️  HACK WARNING: Délai invalide (${delay}), utilisation de 0ms`);
-        delay = 0;
+    const delay = ns.args[1] || 0;
+    const uuid = ns.args[2] || "000";  // 🔥 v47.3 FIX: UUID salt
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ATTENTE (si delay > 0)
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    if (delay > 0) {
+        await ns.sleep(delay);
     }
     
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // 🔥 CORRECTIF BUG 3 : ACCEPTATION DE L'UUID (SALT)
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // L'UUID empêche les collisions lors du job splitting
-    const uuid = ns.args[2] || "000";
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // ⏱️ DÉLAI DE SYNCHRONISATION HWGW
-    // ═══════════════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXÉCUTION HACK
+    // ═══════════════════════════════════════════════════════════════════════════
     
-    if (delay > 0) await ns.sleep(delay);
-
-    // ═══════════════════════════════════════════════════════════════════════════════
-    // 💰 EXÉCUTION DU HACK
-    // ═══════════════════════════════════════════════════════════════════════════════
-    
-    try {
-        const moneyStolen = await ns.hack(target);
-        
-        if (moneyStolen > 0) {
-            ns.print(`✅ HACK: Volé ${ns.formatNumber(moneyStolen)}$ sur ${target}`);
-        } else {
-            ns.print(`⚠️  HACK: 0$ volé sur ${target} (sécurité trop élevée ou argent = 0)`);
-        }
-        
-        return moneyStolen;
-        
-    } catch (error) {
-        ns.print(`❌ HACK ERROR: ${error.message}`);
-        ns.print(`   → Target: ${target}`);
-        ns.print(`   → Delay: ${delay}ms`);
-        ns.print(`   → UUID: ${uuid.substring(0, 8)}...`);
-        return 0;
-    }
+    return await ns.hack(target);
 }
